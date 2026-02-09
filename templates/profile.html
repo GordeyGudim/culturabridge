@@ -66,7 +66,7 @@
                                             <option value="Китай" {% if user.country == 'Китай' %}selected{% endif %}>Китай</option>
                                             <option value="Япония" {% if user.country == 'Япония' %}selected{% endif %}>Япония</option>
                                             <option value="Корея" {% if user.country == 'Корея' %}selected{% endif %}>Корея</option>
-                                            <option value="Бразилия" {% if user.country == 'Бразилия' %}selected{% endif %}>Бразилия</option>
+                                            <option value="Брази利亚" {% if user.country == 'Бразилия' %}selected{% endif %}>Бразилия</option>
                                             <option value="Другая" {% if user.country == 'Другая' %}selected{% endif %}>Другая страна</option>
                                         </select>
                                     </div>
@@ -98,4 +98,89 @@
                                         <div class="col-6">
                                             <div class="form-check mb-2">
                                                 <input class="form-check-input" type="checkbox" name="learning_languages" value="Английский" id="lang_en"
-                                                       {% if 'Английский' in user.learning_languages.split(',') %}
+                                                       {% if 'Английский' in learning_languages_list %}checked{% endif %}>
+                                                <label class="form-check-label" for="lang_en">Английский</label>
+                                            </div>
+                                            <div class="form-check mb-2">
+                                                <input class="form-check-input" type="checkbox" name="learning_languages" value="Испанский" id="lang_es"
+                                                       {% if 'Испанский' in learning_languages_list %}checked{% endif %}>
+                                                <label class="form-check-label" for="lang_es">Испанский</label>
+                                            </div>
+                                            <div class="form-check mb-2">
+                                                <input class="form-check-input" type="checkbox" name="learning_languages" value="Французский" id="lang_fr"
+                                                       {% if 'Французский' in learning_languages_list %}checked{% endif %}>
+                                                <label class="form-check-label" for="lang_fr">Французский</label>
+                                            </div>
+                                            <div class="form-check mb-2">
+                                                <input class="form-check-input" type="checkbox" name="learning_languages" value="Немецкий" id="lang_de"
+                                                       {% if 'Немецкий' in learning_languages_list %}checked{% endif %}>
+                                                <label class="form-check-label" for="lang_de">Немецкий</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="form-check mb-2">
+                                                <input class="form-check-input" type="checkbox" name="learning_languages" value="Китайский" id="lang_zh"
+                                                       {% if 'Китайский' in learning_languages_list %}checked{% endif %}>
+                                                <label class="form-check-label" for="lang_zh">Китайский</label>
+                                            </div>
+                                            <div class="form-check mb-2">
+                                                <input class="form-check-input" type="checkbox" name="learning_languages" value="Японский" id="lang_ja"
+                                                       {% if 'Японский' in learning_languages_list %}checked{% endif %}>
+                                                <label class="form-check-label" for="lang_ja">Японский</label>
+                                            </div>
+                                            <div class="form-check mb-2">
+                                                <input class="form-check-input" type="checkbox" name="learning_languages" value="Корейский" id="lang_ko"
+                                                       {% if 'Корейский' in learning_languages_list %}checked{% endif %}>
+                                                <label class="form-check-label" for="lang_ko">Корейский</label>
+                                            </div>
+                                            <div class="form-check mb-2">
+                                                <input class="form-check-input" type="checkbox" name="learning_languages" value="Итальянский" id="lang_it"
+                                                       {% if 'Итальянский' in learning_languages_list %}checked{% endif %}>
+                                                <label class="form-check-label" for="lang_it">Итальянский</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="form-text">Выберите один или несколько языков</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="interests" class="form-label fw-semibold">Интересы</label>
+                            <textarea class="form-control" id="interests" name="interests" rows="3" 
+                                      placeholder="Что вам интересно? (музыка, фильмы, игры, спорт, наука и т.д.)">{{ user.interests or '' }}</textarea>
+                            <div class="form-text">Расскажите о своих интересах, чтобы мы могли подобрать подходящие встречи</div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between mt-5">
+                            <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i> Назад
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i> Сохранить изменения
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="card border-0 shadow-sm mt-4">
+                <div class="card-body">
+                    <h6 class="mb-3"><i class="fas fa-info-circle me-2 text-primary"></i> Информация о профиле</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p class="small text-muted mb-1"><strong>Дата регистрации:</strong> {{ user.created_at.strftime('%d.%m.%Y') if user.created_at else 'Не указано' }}</p>
+                            <p class="small text-muted mb-1"><strong>Последний вход:</strong> {{ user.last_login.strftime('%d.%m.%Y %H:%M') if user.last_login else 'Не указано' }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="small text-muted mb-0">
+                                <i class="fas fa-shield-alt me-1"></i> Ваши данные защищены и используются только для организации встреч.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

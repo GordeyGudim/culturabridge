@@ -54,7 +54,7 @@
             return false;
         }
         
-        // Проверка через AJAX (можно реализовать позже)
+        // AJAX проверка (будет работать когда добавим API)
         fetch('/api/check-username?username=' + username)
             .then(response => response.json())
             .then(data => {
@@ -65,17 +65,86 @@
                     usernameHelp.textContent = 'Имя пользователя доступно';
                     usernameHelp.className = 'form-text text-success';
                 }
+            })
+            .catch(() => {
+                usernameHelp.textContent = 'Проверка недоступна';
+                usernameHelp.className = 'form-text text-warning';
             });
         return true;
+    }
+    
+    function checkEmail() {
+        const email = document.getElementById('email').value;
+        const emailHelp = document.getElementById('emailHelp');
+        
+        const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        if (!emailPattern.test(email)) {
+            emailHelp.textContent = 'Некорректный email адрес';
+            emailHelp.className = 'form-text text-danger';
+            return false;
+        }
+        
+        // AJAX проверка
+        fetch('/api/check-email?email=' + email)
+            .then(response => response.json())
+            .then(data => {
+                if (!data.available) {
+                    emailHelp.textContent = 'Email уже зарегистрирован';
+                    emailHelp.className = 'form-text text-danger';
+                } else if (!data.valid) {
+                    emailHelp.textContent = 'Некорректный email адрес';
+                    emailHelp.className = 'form-text text-danger';
+                } else {
+                    emailHelp.textContent = 'Email доступен';
+                    emailHelp.className = 'form-text text-success';
+                }
+            })
+            .catch(() => {
+                emailHelp.textContent = 'Проверка недоступна';
+                emailHelp.className = 'form-text text-warning';
+            });
+        return true;
+    }
+    
+    function validatePasswordStrength() {
+        const password = document.getElementById('password').value;
+        const passwordHelp = document.getElementById('passwordHelp');
+        
+        let errors = [];
+        
+        if (password.length < 8) {
+            errors.push('Минимум 8 символов');
+        }
+        if (!/[A-Z]/.test(password)) {
+            errors.push('Заглавная буква');
+        }
+        if (!/[a-z]/.test(password)) {
+            errors.push('Строчная буква');
+        }
+        if (!/\d/.test(password)) {
+            errors.push('Цифра');
+        }
+        
+        if (errors.length > 0) {
+            passwordHelp.textContent = 'Требуется: ' + errors.join(', ');
+            passwordHelp.className = 'form-text text-danger';
+            return false;
+        } else {
+            passwordHelp.textContent = 'Пароль достаточно надежный';
+            passwordHelp.className = 'form-text text-success';
+            return true;
+        }
     }
     
     document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('age').addEventListener('input', validateAge);
         document.getElementById('confirm_password').addEventListener('input', validatePassword);
         document.getElementById('username').addEventListener('blur', checkUsername);
+        document.getElementById('email').addEventListener('blur', checkEmail);
+        document.getElementById('password').addEventListener('input', validatePasswordStrength);
         
         document.querySelector('form').addEventListener('submit', function(e) {
-            if (!validateAge() || !validatePassword()) {
+            if (!validateAge() || !validatePassword() || !validatePasswordStrength()) {
                 e.preventDefault();
                 alert('Пожалуйста, исправьте ошибки в форме');
             }
@@ -103,12 +172,12 @@
                         
                         <div class="row mb-4">
                             <div class="col-md-6 mb-3">
-                                <label for="first_name" class="form-label fw-semibold">Имя</label>
+                                <label for="first_name" class="form-label fw-semibold">Имя *</label>
                                 <input type="text" class="form-control" id="first_name" name="first_name" 
                                        placeholder="Введите ваше имя" required>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="last_name" class="form-label fw-semibold">Фамилия</label>
+                                <label for="last_name" class="form-label fw-semibold">Фамилия *</label>
                                 <input type="text" class="form-control" id="last_name" name="last_name" 
                                        placeholder="Введите вашу фамилию" required>
                             </div>
@@ -125,7 +194,7 @@
                                 <label for="email" class="form-label fw-semibold">Email *</label>
                                 <input type="email" class="form-control" id="email" name="email" 
                                        placeholder="example@email.com" required>
-                                <div class="form-text">На этот email придут данные для входа</div>
+                                <div id="emailHelp" class="form-text">На этот email придут данные для входа</div>
                             </div>
                         </div>
                         
@@ -162,7 +231,7 @@
                                 <label for="password" class="form-label fw-semibold">Пароль *</label>
                                 <input type="password" class="form-control" id="password" name="password" 
                                        placeholder="Создайте надежный пароль" required minlength="8">
-                                <div class="form-text">
+                                <div id="passwordHelp" class="form-text">
                                     <i class="fas fa-info-circle me-1"></i>
                                     Минимум 8 символов, заглавные и строчные буквы, цифры
                                 </div>
@@ -195,21 +264,43 @@
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label fw-semibold">Языки для изучения *</label>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="learning_languages" value="Английский" id="lang_en">
-                                    <label class="form-check-label" for="lang_en">Английский</label>
-                                </div>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="learning_languages" value="Испанский" id="lang_es">
-                                    <label class="form-check-label" for="lang_es">Испанский</label>
-                                </div>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="learning_languages" value="Французский" id="lang_fr">
-                                    <label class="form-check-label" for="lang_fr">Французский</label>
-                                </div>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="learning_languages" value="Немецкий" id="lang_de">
-                                    <label class="form-check-label" for="lang_de">Немецкий</label>
+                                <div class="row">
+                                    <div class="col-6">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="learning_languages" value="Английский" id="lang_en">
+                                            <label class="form-check-label" for="lang_en">Английский</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="learning_languages" value="Испанский" id="lang_es">
+                                            <label class="form-check-label" for="lang_es">Испанский</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="learning_languages" value="Французский" id="lang_fr">
+                                            <label class="form-check-label" for="lang_fr">Французский</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="learning_languages" value="Немецкий" id="lang_de">
+                                            <label class="form-check-label" for="lang_de">Немецкий</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="learning_languages" value="Китайский" id="lang_zh">
+                                            <label class="form-check-label" for="lang_zh">Китайский</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="learning_languages" value="Японский" id="lang_ja">
+                                            <label class="form-check-label" for="lang_ja">Японский</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="learning_languages" value="Корейский" id="lang_ko">
+                                            <label class="form-check-label" for="lang_ko">Корейский</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="learning_languages" value="Итальянский" id="lang_it">
+                                            <label class="form-check-label" for="lang_it">Итальянский</label>
+                                        </div>
+                                    </div>
                                 </div>
                                 <div class="form-text">Выберите один или несколько языков</div>
                             </div>

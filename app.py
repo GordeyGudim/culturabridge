@@ -1,18 +1,17 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from config import Config
-from models import db, User, Meeting
+from models import db, User, Meeting, MeetingParticipant, MeetingRoom, RoomParticipant
 from auth import AuthService, AuthValidator
+from meeting_service import MeetingService
 from datetime import datetime
 import json
 
 app = Flask(__name__)
 app.config.from_object(Config)
 
-# Инициализация базы данных
 db.init_app(app)
 
-# Инициализация Flask-Login
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
@@ -22,7 +21,6 @@ login_manager.login_message = 'Пожалуйста, войдите в сист�
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# Создание таблиц при первом запуске
 with app.app_context():
     db.create_all()
 
@@ -80,7 +78,6 @@ def register():
         else:
             flash(message, 'danger')
     
-    # Списки для выбора
     countries = ['Россия', 'США', 'Великобритания', 'Германия', 'Франция', 'Испания', 'Китай', 'Япония', 'Корея', 'Бразилия']
     languages = ['Английский', 'Испанский', 'Французский', 'Немецкий', 'Китайский', 'Японский', 'Корейский', 'Русский', 'Португальский', 'Итальянский']
     
@@ -97,20 +94,11 @@ def logout():
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    # Получаем предстоящие встречи пользователя
-    upcoming_meetings = Meeting.query.join(
-        Meeting.participants
-    ).filter(
-        Meeting.scheduled_time > datetime.utcnow(),
-        Meeting.is_active == True
-    ).all()
-    
-    # Получаем рекомендации встреч
-    recommended_meetings = Meeting.query.filter(
-        Meeting.language.in_(current_user.learning_languages.split(',')),
-        Meeting.scheduled_time > datetime.utcnow(),
-        Meeting.is_active == True
-    ).limit(5).all()
+    # Старая статистика
+    total_meetings = MeetingParticipant.query.filter_by(user_id=current_user.id).count()
+    total_friends = 0
+    total_languages = len(current_user.learning_languages.split(',')) if current_user.learning_languages else 0
+    total_hours = total_meetings * 1
     
     user_data = {
         'username': current_user.username,
@@ -118,35 +106,35 @@ def dashboard():
         'age': current_user.age,
         'country': current_user.country,
         'native_language': current_user.native_language,
-        'learning_languages': current_user.learning_languages.split(',')
-    }
-    months_ru = {
-        1: 'января', 2: 'февраля', 3: 'марта', 4: 'апреля',
-        5: 'мая', 6: 'июня', 7: 'июля', 8: 'августа',
-        9: 'сентября', 10: 'октября', 11: 'ноября', 12: 'декабря'
+        'learning_languages': current_user.learning_languages.split(',') if current_user.learning_languages else [],
+        'stats': {
+            'total_meetings': total_meetings,
+            'total_friends': total_friends,
+            'total_languages': total_languages,
+            'total_hours': total_hours
+        }
     }
     
-    from datetime import datetime
+    # Текущая дата на русском
+    months_ru = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
+                 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря']
+    
     now = datetime.now()
-    current_date = f"{now.day} {months_ru[now.month]} {now.year}"
+    current_date = f"{now.day} {months_ru[now.month-1]} {now.year}"
     
     return render_template('dashboard.html', 
                          user=user_data,
-                         upcoming_meetings=upcoming_meetings,
-                         recommended_meetings=recommended_meetings,
-                         current_date=current_date)  # ДОБАВЬТЕ ЭТО!
+                         current_date=current_date)
 
 @app.route('/profile', methods=['GET', 'POST'])
 @login_required
 def profile():
     if request.method == 'POST':
-        # Обновление профиля
         current_user.first_name = request.form.get('first_name', current_user.first_name)
         current_user.last_name = request.form.get('last_name', current_user.last_name)
         current_user.country = request.form.get('country', current_user.country)
         current_user.interests = request.form.get('interests', current_user.interests)
         
-        # Обновление языков
         new_languages = request.form.getlist('learning_languages')
         current_user.learning_languages = ','.join(new_languages)
         
@@ -157,22 +145,143 @@ def profile():
             db.session.rollback()
             flash(f'Ошибка при обновлении профиля: {str(e)}', 'danger')
     
-    return render_template('profile.html', user=current_user)
+    learning_languages_list = current_user.learning_languages.split(',') if current_user.learning_languages else []
+    
+    return render_template('profile.html', 
+                         user=current_user, 
+                         learning_languages_list=learning_languages_list)
 
-# API для проверки доступности имени пользователя
+# Система встреч
+@app.route('/meetings/create', methods=['GET', 'POST'])
+@login_required
+def create_meeting():
+    if request.method == 'POST':
+        title = request.form.get('title')
+        description = request.form.get('description')
+        topic = request.form.get('topic')
+        language = request.form.get('language')
+        level = request.form.get('level')
+        max_participants = int(request.form.get('max_participants', 6))
+        
+        date_str = request.form.get('date')
+        time_str = request.form.get('time')
+        scheduled_time = datetime.strptime(f"{date_str} {time_str}", "%Y-%m-%d %H:%M")
+        
+        room, message = MeetingService.create_room(
+            user_id=current_user.id,
+            title=title,
+            description=description,
+            topic=topic,
+            language=language,
+            level=level,
+            scheduled_time=scheduled_time,
+            max_participants=max_participants
+        )
+        
+        if room:
+            flash('Встреча успешно создана!', 'success')
+            return redirect(url_for('meeting_detail', room_id=room.id))
+        else:
+            flash(message, 'danger')
+    
+    topics = ['🎮 Видеоигры', '🎵 K-pop и J-pop', '🎬 Фильмы и сериалы', 
+              '📚 Литература', '🌍 Экология', '⚽ Спорт', '🍿 Культура питания',
+              '💻 Технологии', '🎨 Искусство', '✈️ Путешествия']
+    
+    languages = ['Английский', 'Испанский', 'Французский', 'Немецкий', 
+                 'Китайский', 'Японский', 'Корейский', 'Итальянский']
+    
+    levels = ['Начинающий', 'Средний', 'Продвинутый']
+    
+    return render_template('create_meeting.html', 
+                         topics=topics, 
+                         languages=languages, 
+                         levels=levels)
+
+@app.route('/meetings')
+@login_required
+def meetings_list():
+    filters = {
+        'topic': request.args.get('topic'),
+        'language': request.args.get('language'),
+        'level': request.args.get('level')
+    }
+    
+    upcoming_meetings = MeetingService.get_upcoming_rooms(
+        user_id=current_user.id,
+        filters=filters
+    )
+    
+    popular_topics = MeetingService.get_popular_topics()
+    
+    return render_template('meetings.html',
+                         meetings=upcoming_meetings,
+                         popular_topics=popular_topics,
+                         filters=filters)
+
+@app.route('/meetings/<int:room_id>')
+@login_required
+def meeting_detail(room_id):
+    room = MeetingRoom.query.get_or_404(room_id)
+    
+    is_participant = RoomParticipant.query.filter_by(
+        user_id=current_user.id,
+        room_id=room_id
+    ).first() is not None
+    
+    is_moderator = room.moderator_id == current_user.id
+    
+    participants = RoomParticipant.query.filter_by(room_id=room_id).all()
+    
+    return render_template('meeting_detail.html',
+                         room=room,
+                         is_participant=is_participant,
+                         is_moderator=is_moderator,
+                         participants=participants)
+
+@app.route('/meetings/<int:room_id>/join', methods=['POST'])
+@login_required
+def join_meeting(room_id):
+    success, message = MeetingService.join_room(current_user.id, room_id)
+    
+    if success:
+        flash('Вы успешно присоединились к встрече!', 'success')
+    else:
+        flash(message, 'danger')
+    
+    return redirect(url_for('meeting_detail', room_id=room_id))
+
+@app.route('/my-meetings')
+@login_required
+def my_meetings():
+    upcoming = MeetingService.get_user_rooms(current_user.id)
+    
+    past_meetings = MeetingRoom.query.join(
+        RoomParticipant
+    ).filter(
+        RoomParticipant.user_id == current_user.id,
+        MeetingRoom.scheduled_time <= datetime.utcnow(),
+        MeetingRoom.is_active == False
+    ).order_by(
+        MeetingRoom.scheduled_time.desc()
+    ).all()
+    
+    return render_template('my_meetings.html',
+                         upcoming_meetings=upcoming,
+                         past_meetings=past_meetings)
+
+# API эндпоинты
 @app.route('/api/check-username')
 def check_username():
     username = request.args.get('username', '')
     exists = User.query.filter_by(username=username).first() is not None
     return jsonify({'available': not exists})
 
-# API для проверки email
 @app.route('/api/check-email')
 def check_email():
     email = request.args.get('email', '')
     exists = User.query.filter_by(email=email).first() is not None
     
-    # Проверка формата email
     is_valid = AuthValidator.validate_email(email)
     
     return jsonify({
@@ -180,7 +289,6 @@ def check_email():
         'valid': is_valid
     })
 
-# API для получения встреч
 @app.route('/api/meetings')
 @login_required
 def get_meetings():
@@ -188,17 +296,17 @@ def get_meetings():
     language = request.args.get('language')
     level = request.args.get('level')
     
-    query = Meeting.query.filter(
-        Meeting.scheduled_time > datetime.utcnow(),
-        Meeting.is_active == True
+    query = MeetingRoom.query.filter(
+        MeetingRoom.scheduled_time > datetime.utcnow(),
+        MeetingRoom.is_active == True
     )
     
     if topic:
-        query = query.filter(Meeting.topic.contains(topic))
+        query = query.filter(MeetingRoom.topic.contains(topic))
     if language:
-        query = query.filter(Meeting.language == language)
+        query = query.filter(MeetingRoom.language == language)
     if level:
-        query = query.filter(Meeting.level == level)
+        query = query.filter(MeetingRoom.level == level)
     
     meetings = query.limit(20).all()
     
@@ -211,7 +319,7 @@ def get_meetings():
             'language': meeting.language,
             'level': meeting.level,
             'scheduled_time': meeting.scheduled_time.isoformat(),
-            'participant_count': len(meeting.participants),
+            'participant_count': meeting.current_participants,
             'max_participants': meeting.max_participants
         })
     

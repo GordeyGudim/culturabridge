@@ -2,84 +2,6 @@
 
 {% block title %}Личный кабинет - CulturaBridge{% endblock %}
 
-{% block extra_css %}
-<style>
-    .dashboard-stats {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 1rem;
-        margin-bottom: 2rem;
-    }
-    
-    .stat-card {
-        background: white;
-        border-radius: 15px;
-        padding: 1.5rem;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-        text-align: center;
-    }
-    
-    .stat-number {
-        font-size: 2.5rem;
-        font-weight: 700;
-        color: var(--primary);
-        line-height: 1;
-    }
-    
-    .stat-label {
-        color: var(--dark);
-        font-weight: 600;
-        margin-top: 0.5rem;
-    }
-    
-    .meeting-card {
-        border-left: 4px solid var(--accent);
-        transition: all 0.3s;
-    }
-    
-    .meeting-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-    }
-    
-    .level-badge {
-        padding: 0.25rem 0.75rem;
-        border-radius: 20px;
-        font-size: 0.75rem;
-        font-weight: 600;
-    }
-    
-    .level-beginner {
-        background: #d1fae5;
-        color: #065f46;
-    }
-    
-    .level-intermediate {
-        background: #fef3c7;
-        color: #92400e;
-    }
-    
-    .level-advanced {
-        background: #dbeafe;
-        color: #1e40af;
-    }
-    
-    .progress-ring {
-        width: 80px;
-        height: 80px;
-    }
-    
-    .progress-ring__circle {
-        stroke-width: 8;
-        fill: transparent;
-    }
-    
-    .language-progress {
-        margin-bottom: 1.5rem;
-    }
-</style>
-{% endblock %}
-
 {% block content %}
 <div class="container-fluid py-4">
     <div class="row">
@@ -103,20 +25,17 @@
                     <a href="{{ url_for('profile') }}" class="nav-link">
                         <i class="fas fa-user-edit me-2"></i> Профиль
                     </a>
-                    <a href="#" class="nav-link">
-                        <i class="fas fa-comments me-2"></i> Мои встречи
+                    <a href="{{ url_for('meetings_list') }}" class="nav-link">
+                        <i class="fas fa-comments me-2"></i> Встречи
                     </a>
-                    <a href="#" class="nav-link">
-                        <i class="fas fa-calendar-alt me-2"></i> Расписание
+                    <a href="{{ url_for('my_meetings') }}" class="nav-link">
+                        <i class="fas fa-calendar-alt me-2"></i> Мои встречи
                     </a>
                     <a href="#" class="nav-link">
                         <i class="fas fa-users me-2"></i> Друзья
                     </a>
                     <a href="#" class="nav-link">
                         <i class="fas fa-chart-line me-2"></i> Прогресс
-                    </a>
-                    <a href="#" class="nav-link">
-                        <i class="fas fa-cog me-2"></i> Настройки
                     </a>
                     <hr class="opacity-25 my-3">
                     <a href="{{ url_for('logout') }}" class="nav-link">
@@ -145,104 +64,86 @@
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <div>
                         <h1 class="h3 mb-2">Добро пожаловать, {{ user.name }}!</h1>
-                        <p class="text-muted">Сегодня {% now 'local', '%d %B %Y' %}</p>
+                        <p class="text-muted">Сегодня {{ current_date }}</p>
                     </div>
-                    <button class="btn btn-primary d-flex align-items-center">
+                    <a href="{{ url_for('create_meeting') }}" class="btn btn-primary d-flex align-items-center">
                         <i class="fas fa-plus me-2"></i> Новая встреча
-                    </button>
+                    </a>
                 </div>
                 
                 <!-- Статистика -->
                 <div class="dashboard-stats">
                     <div class="stat-card">
-                        <div class="stat-number">24</div>
+                        <div class="stat-number">{{ user.stats.total_meetings }}</div>
                         <div class="stat-label">Всего встреч</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-number">8</div>
+                        <div class="stat-number">{{ user.stats.total_friends }}</div>
                         <div class="stat-label">Друзей</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-number">{{ user.learning_languages|length }}</div>
+                        <div class="stat-number">{{ user.stats.total_languages }}</div>
                         <div class="stat-label">Языков</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-number">156</div>
+                        <div class="stat-number">{{ user.stats.total_hours }}</div>
                         <div class="stat-label">Часов практики</div>
                     </div>
                 </div>
                 
                 <div class="row">
-                    <!-- Предстоящие встречи -->
+                    <!-- Быстрые действия -->
                     <div class="col-xl-8 mb-4">
                         <div class="card border-0 shadow-sm">
                             <div class="card-header bg-white border-0 py-3">
-                                <h5 class="mb-0"><i class="fas fa-calendar-alt me-2"></i> Предстоящие встречи</h5>
+                                <h5 class="mb-0"><i class="fas fa-bolt me-2"></i> Быстрые действия</h5>
                             </div>
                             <div class="card-body">
-                                {% if upcoming_meetings %}
-                                    {% for meeting in upcoming_meetings[:3] %}
-                                    <div class="meeting-card card mb-3">
-                                        <div class="card-body">
-                                            <div class="d-flex justify-content-between align-items-start">
-                                                <div class="flex-grow-1">
-                                                    <div class="d-flex align-items-center mb-2">
-                                                        <h5 class="mb-0 me-3">{{ meeting.title }}</h5>
-                                                        <span class="badge language-badge">{{ meeting.language }}</span>
-                                                    </div>
-                                                    <p class="text-muted mb-2">{{ meeting.description[:120] }}...</p>
-                                                    <div class="d-flex flex-wrap gap-2 mb-3">
-                                                        <span class="badge bg-secondary">{{ meeting.topic }}</span>
-                                                        <span class="level-badge {{ 'level-' + meeting.level|lower }}">
-                                                            {{ meeting.level }}
-                                                        </span>
-                                                        <span class="badge bg-light text-dark">
-                                                            <i class="fas fa-users me-1"></i>
-                                                            {{ meeting.participants|length }}/{{ meeting.max_participants }}
-                                                        </span>
-                                                    </div>
-                                                    <small class="text-muted">
-                                                        <i class="fas fa-clock me-1"></i>
-                                                        {{ meeting.scheduled_time.strftime('%d.%m.%Y %H:%M') }}
-                                                        • {{ meeting.duration }} минут
-                                                    </small>
-                                                </div>
-                                                <div class="ms-3">
-                                                    <button class="btn btn-primary btn-sm">
-                                                        <i class="fas fa-door-open me-1"></i> Присоединиться
-                                                    </button>
-                                                </div>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <a href="{{ url_for('meetings_list') }}" class="btn btn-outline-primary w-100 d-flex align-items-center justify-content-center p-3">
+                                            <i class="fas fa-search fa-2x me-3"></i>
+                                            <div class="text-start">
+                                                <h6 class="mb-1">Найти встречу</h6>
+                                                <small class="text-muted">Присоединиться к обсуждению</small>
                                             </div>
-                                        </div>
-                                    </div>
-                                    {% endfor %}
-                                    
-                                    {% if upcoming_meetings|length > 3 %}
-                                    <div class="text-center mt-3">
-                                        <a href="#" class="btn btn-outline-primary">
-                                            Показать все встречи ({{ upcoming_meetings|length }})
                                         </a>
                                     </div>
-                                    {% endif %}
-                                {% else %}
-                                    <div class="text-center py-5">
-                                        <div class="bg-light rounded-circle d-inline-flex p-4 mb-3">
-                                            <i class="fas fa-calendar-times fa-2x text-muted"></i>
-                                        </div>
-                                        <h5>Нет предстоящих встреч</h5>
-                                        <p class="text-muted mb-4">Запланируйте свою первую встречу или присоединитесь к существующей</p>
-                                        <a href="#" class="btn btn-primary">
-                                            <i class="fas fa-search me-2"></i> Найти встречи
+                                    <div class="col-md-6">
+                                        <a href="{{ url_for('create_meeting') }}" class="btn btn-outline-primary w-100 d-flex align-items-center justify-content-center p-3">
+                                            <i class="fas fa-calendar-plus fa-2x me-3"></i>
+                                            <div class="text-start">
+                                                <h6 class="mb-1">Создать встречу</h6>
+                                                <small class="text-muted">Организовать свое обсуждение</small>
+                                            </div>
                                         </a>
                                     </div>
-                                {% endif %}
+                                    <div class="col-md-6">
+                                        <a href="{{ url_for('my_meetings') }}" class="btn btn-outline-primary w-100 d-flex align-items-center justify-content-center p-3">
+                                            <i class="fas fa-calendar-alt fa-2x me-3"></i>
+                                            <div class="text-start">
+                                                <h6 class="mb-1">Мои встречи</h6>
+                                                <small class="text-muted">Предстоящие и прошедшие</small>
+                                            </div>
+                                        </a>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <a href="{{ url_for('profile') }}" class="btn btn-outline-primary w-100 d-flex align-items-center justify-content-center p-3">
+                                            <i class="fas fa-user-edit fa-2x me-3"></i>
+                                            <div class="text-start">
+                                                <h6 class="mb-1">Профиль</h6>
+                                                <small class="text-muted">Редактировать информацию</small>
+                                            </div>
+                                        </a>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         
-                        <!-- Рекомендуемые темы -->
+                        <!-- Популярные темы -->
                         <div class="card border-0 shadow-sm mt-4">
                             <div class="card-header bg-white border-0 py-3">
-                                <h5 class="mb-0"><i class="fas fa-lightbulb me-2"></i> Популярные темы</h5>
+                                <h5 class="mb-0"><i class="fas fa-lightbulb me-2"></i> Популярные темы сейчас</h5>
                             </div>
                             <div class="card-body">
                                 <div class="d-flex flex-wrap gap-2">
@@ -284,111 +185,23 @@
                             </div>
                         </div>
                         
-                        <!-- Рекомендуемые встречи -->
-                        <div class="card border-0 shadow-sm mb-4">
-                            <div class="card-header bg-white border-0 py-3">
-                                <h5 class="mb-0"><i class="fas fa-star me-2"></i> Рекомендуется для вас</h5>
-                            </div>
-                            <div class="card-body">
-                                {% if recommended_meetings %}
-                                    {% for meeting in recommended_meetings[:2] %}
-                                    <div class="mb-3 pb-3 border-bottom">
-                                        <div class="d-flex justify-content-between align-items-start mb-2">
-                                            <h6 class="mb-0">{{ meeting.title[:30] }}{% if meeting.title|length > 30 %}...{% endif %}</h6>
-                                            <span class="badge language-badge">{{ meeting.language }}</span>
-                                        </div>
-                                        <p class="small text-muted mb-2">
-                                            <i class="fas fa-tag me-1"></i> {{ meeting.topic }}
-                                            <br>
-                                            <i class="fas fa-signal me-1"></i> {{ meeting.level }}
-                                        </p>
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <small class="text-muted">
-                                                <i class="fas fa-clock me-1"></i>
-                                                {{ meeting.scheduled_time.strftime('%H:%M') }}
-                                            </small>
-                                            <button class="btn btn-sm btn-outline-primary">
-                                                Присоединиться
-                                            </button>
-                                        </div>
-                                    </div>
-                                    {% endfor %}
-                                    
-                                    <div class="text-center">
-                                        <a href="#" class="btn btn-sm btn-link">Показать больше рекомендаций</a>
-                                    </div>
-                                {% else %}
-                                    <p class="text-muted text-center mb-0">Пока нет рекомендаций</p>
-                                {% endif %}
-                            </div>
-                        </div>
-                        
-                        <!-- Быстрые действия -->
+                        <!-- Активность -->
                         <div class="card border-0 shadow-sm">
                             <div class="card-header bg-white border-0 py-3">
-                                <h5 class="mb-0"><i class="fas fa-bolt me-2"></i> Быстрые действия</h5>
+                                <h5 class="mb-0"><i class="fas fa-history me-2"></i> Недавняя активность</h5>
                             </div>
                             <div class="card-body">
-                                <div class="d-grid gap-2">
-                                    <button class="btn btn-outline-primary">
-                                        <i class="fas fa-search me-2"></i> Найти встречу
-                                    </button>
-                                    <button class="btn btn-outline-primary">
-                                        <i class="fas fa-calendar-plus me-2"></i> Создать встречу
-                                    </button>
-                                    <button class="btn btn-outline-primary">
-                                        <i class="fas fa-user-friends me-2"></i> Найти друзей
-                                    </button>
-                                    <button class="btn btn-outline-primary">
-                                        <i class="fas fa-chart-bar me-2"></i> Статистика прогресса
-                                    </button>
+                                <div class="text-center py-4">
+                                    <div class="bg-light rounded-circle d-inline-flex p-4 mb-3">
+                                        <i class="fas fa-history fa-2x text-muted"></i>
+                                    </div>
+                                    <h5>Начните свое путешествие!</h5>
+                                    <p class="text-muted mb-4">Присоединяйтесь к встречам, и здесь появится ваша активность</p>
+                                    <a href="{{ url_for('meetings_list') }}" class="btn btn-primary">
+                                        <i class="fas fa-search me-2"></i> Найти встречи
+                                    </a>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Активность -->
-                <div class="card border-0 shadow-sm mt-4">
-                    <div class="card-header bg-white border-0 py-3">
-                        <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i> Недавняя активность</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>Дата</th>
-                                        <th>Встреча</th>
-                                        <th>Язык</th>
-                                        <th>Продолжительность</th>
-                                        <th>Статус</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td>Сегодня</td>
-                                        <td>Обсуждение новых игр</td>
-                                        <td><span class="badge language-badge">Английский</span></td>
-                                        <td>60 мин</td>
-                                        <td><span class="badge bg-success">Завершено</span></td>
-                                    </tr>
-                                    <tr>
-                                        <td>Вчера</td>
-                                        <td>K-pop культура</td>
-                                        <td><span class="badge language-badge">Корейский</span></td>
-                                        <td>45 мин</td>
-                                        <td><span class="badge bg-success">Завершено</span></td>
-                                    </tr>
-                                    <tr>
-                                        <td>2 дня назад</td>
-                                        <td>Экологические инициативы</td>
-                                        <td><span class="badge language-badge">Испанский</span></td>
-                                        <td>60 мин</td>
-                                        <td><span class="badge bg-success">Завершено</span></td>
-                                    </tr>
-                                </tbody>
-                            </table>
                         </div>
                     </div>
                 </div>
@@ -412,12 +225,12 @@
                 </a>
             </div>
             <div class="col">
-                <a href="#" class="btn btn-link w-100 py-3 text-center">
+                <a href="{{ url_for('meetings_list') }}" class="btn btn-link w-100 py-3 text-center">
                     <i class="fas fa-comments fa-lg"></i>
                 </a>
             </div>
             <div class="col">
-                <a href="#" class="btn btn-link w-100 py-3 text-center">
+                <a href="{{ url_for('my_meetings') }}" class="btn btn-link w-100 py-3 text-center">
                     <i class="fas fa-calendar-alt fa-lg"></i>
                 </a>
             </div>
