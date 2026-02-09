@@ -1,0 +1,268 @@
+{% extends "base.html" %}
+
+{% block title %}Регистрация - CulturaBridge{% endblock %}
+
+{% block extra_js %}
+<script>
+    function validateAge() {
+        const ageInput = document.getElementById('age');
+        const age = parseInt(ageInput.value);
+        const ageHelp = document.getElementById('ageHelp');
+        
+        if (age < 13 || age > 19) {
+            ageInput.classList.add('is-invalid');
+            ageHelp.classList.remove('text-muted');
+            ageHelp.classList.add('text-danger');
+            ageHelp.textContent = 'Для регистрации на CulturaBridge возраст должен быть от 13 до 19 лет';
+            return false;
+        } else {
+            ageInput.classList.remove('is-invalid');
+            ageHelp.classList.remove('text-danger');
+            ageHelp.classList.add('text-muted');
+            ageHelp.textContent = 'Введите ваш настоящий возраст (от 13 до 19 лет)';
+            return true;
+        }
+    }
+    
+    function validatePassword() {
+        const password = document.getElementById('password').value;
+        const confirmPassword = document.getElementById('confirm_password');
+        const confirmPasswordHelp = document.getElementById('confirmPasswordHelp');
+        
+        if (password !== confirmPassword.value) {
+            confirmPassword.classList.add('is-invalid');
+            confirmPasswordHelp.classList.remove('text-muted');
+            confirmPasswordHelp.classList.add('text-danger');
+            confirmPasswordHelp.textContent = 'Пароли не совпадают';
+            return false;
+        } else {
+            confirmPassword.classList.remove('is-invalid');
+            confirmPasswordHelp.classList.remove('text-danger');
+            confirmPasswordHelp.classList.add('text-muted');
+            confirmPasswordHelp.textContent = 'Повторите ваш пароль';
+            return true;
+        }
+    }
+    
+    function checkUsername() {
+        const username = document.getElementById('username').value;
+        const usernameHelp = document.getElementById('usernameHelp');
+        
+        if (username.length < 3) {
+            usernameHelp.textContent = 'Имя пользователя должно содержать минимум 3 символа';
+            usernameHelp.className = 'form-text text-danger';
+            return false;
+        }
+        
+        // Проверка через AJAX (можно реализовать позже)
+        fetch('/api/check-username?username=' + username)
+            .then(response => response.json())
+            .then(data => {
+                if (!data.available) {
+                    usernameHelp.textContent = 'Имя пользователя уже занято';
+                    usernameHelp.className = 'form-text text-danger';
+                } else {
+                    usernameHelp.textContent = 'Имя пользователя доступно';
+                    usernameHelp.className = 'form-text text-success';
+                }
+            });
+        return true;
+    }
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('age').addEventListener('input', validateAge);
+        document.getElementById('confirm_password').addEventListener('input', validatePassword);
+        document.getElementById('username').addEventListener('blur', checkUsername);
+        
+        document.querySelector('form').addEventListener('submit', function(e) {
+            if (!validateAge() || !validatePassword()) {
+                e.preventDefault();
+                alert('Пожалуйста, исправьте ошибки в форме');
+            }
+        });
+    });
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-10 col-lg-8">
+            <div class="card border-0 shadow-lg">
+                <div class="card-body p-5">
+                    <div class="text-center mb-5">
+                        <div class="bg-primary bg-opacity-10 rounded-circle d-inline-flex p-3 mb-3">
+                            <i class="fas fa-user-plus fa-2x text-primary"></i>
+                        </div>
+                        <h2 class="card-title mb-2">Создание аккаунта</h2>
+                        <p class="text-muted">Присоединяйтесь к сообществу CulturaBridge</p>
+                    </div>
+                    
+                    <form method="POST" action="{{ url_for('register') }}">
+                        <h5 class="mb-4 border-bottom pb-2">Основная информация</h5>
+                        
+                        <div class="row mb-4">
+                            <div class="col-md-6 mb-3">
+                                <label for="first_name" class="form-label fw-semibold">Имя</label>
+                                <input type="text" class="form-control" id="first_name" name="first_name" 
+                                       placeholder="Введите ваше имя" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="last_name" class="form-label fw-semibold">Фамилия</label>
+                                <input type="text" class="form-control" id="last_name" name="last_name" 
+                                       placeholder="Введите вашу фамилию" required>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-4">
+                            <div class="col-md-6 mb-3">
+                                <label for="username" class="form-label fw-semibold">Имя пользователя *</label>
+                                <input type="text" class="form-control" id="username" name="username" 
+                                       placeholder="Придумайте имя пользователя" required minlength="3">
+                                <div id="usernameHelp" class="form-text">Используется для входа в систему</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="email" class="form-label fw-semibold">Email *</label>
+                                <input type="email" class="form-control" id="email" name="email" 
+                                       placeholder="example@email.com" required>
+                                <div class="form-text">На этот email придут данные для входа</div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-4">
+                            <div class="col-md-6 mb-3">
+                                <label for="age" class="form-label fw-semibold">Возраст *</label>
+                                <input type="number" class="form-control" id="age" name="age" 
+                                       min="13" max="19" placeholder="Ваш возраст" required>
+                                <div id="ageHelp" class="form-text text-muted">Введите ваш настоящий возраст (от 13 до 19 лет)</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="country" class="form-label fw-semibold">Страна *</label>
+                                <select class="form-select" id="country" name="country" required>
+                                    <option value="" selected disabled>Выберите страну</option>
+                                    <option value="Россия">Россия</option>
+                                    <option value="США">США</option>
+                                    <option value="Великобритания">Великобритания</option>
+                                    <option value="Германия">Германия</option>
+                                    <option value="Франция">Франция</option>
+                                    <option value="Испания">Испания</option>
+                                    <option value="Китай">Китай</option>
+                                    <option value="Япония">Япония</option>
+                                    <option value="Корея">Корея</option>
+                                    <option value="Бразилия">Бразилия</option>
+                                    <option value="Другая">Другая страна</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <h5 class="mb-4 border-bottom pb-2">Безопасность</h5>
+                        
+                        <div class="row mb-4">
+                            <div class="col-md-6 mb-3">
+                                <label for="password" class="form-label fw-semibold">Пароль *</label>
+                                <input type="password" class="form-control" id="password" name="password" 
+                                       placeholder="Создайте надежный пароль" required minlength="8">
+                                <div class="form-text">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Минимум 8 символов, заглавные и строчные буквы, цифры
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="confirm_password" class="form-label fw-semibold">Подтверждение пароля *</label>
+                                <input type="password" class="form-control" id="confirm_password" 
+                                       placeholder="Повторите пароль" required minlength="8">
+                                <div id="confirmPasswordHelp" class="form-text text-muted">Повторите ваш пароль</div>
+                            </div>
+                        </div>
+                        
+                        <h5 class="mb-4 border-bottom pb-2">Языковые предпочтения</h5>
+                        
+                        <div class="row mb-4">
+                            <div class="col-md-6 mb-3">
+                                <label for="native_language" class="form-label fw-semibold">Родной язык *</label>
+                                <select class="form-select" id="native_language" name="native_language" required>
+                                    <option value="" selected disabled>Выберите родной язык</option>
+                                    <option value="Русский">Русский</option>
+                                    <option value="Английский">Английский</option>
+                                    <option value="Испанский">Испанский</option>
+                                    <option value="Французский">Французский</option>
+                                    <option value="Немецкий">Немецкий</option>
+                                    <option value="Китайский">Китайский</option>
+                                    <option value="Японский">Японский</option>
+                                    <option value="Корейский">Корейский</option>
+                                    <option value="Другой">Другой язык</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold">Языки для изучения *</label>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="learning_languages" value="Английский" id="lang_en">
+                                    <label class="form-check-label" for="lang_en">Английский</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="learning_languages" value="Испанский" id="lang_es">
+                                    <label class="form-check-label" for="lang_es">Испанский</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="learning_languages" value="Французский" id="lang_fr">
+                                    <label class="form-check-label" for="lang_fr">Французский</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="learning_languages" value="Немецкий" id="lang_de">
+                                    <label class="form-check-label" for="lang_de">Немецкий</label>
+                                </div>
+                                <div class="form-text">Выберите один или несколько языков</div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="interests" class="form-label fw-semibold">Интересы</label>
+                            <textarea class="form-control" id="interests" name="interests" rows="3" 
+                                      placeholder="Что вам интересно? (музыка, фильмы, игры, спорт, наука и т.д.)"></textarea>
+                            <div class="form-text">Расскажите о своих интересах, чтобы мы могли подобрать подходящие встречи</div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="terms" name="terms" required>
+                                <label class="form-check-label" for="terms">
+                                    Я согласен с <a href="#" class="text-decoration-none">Условиями использования</a> и <a href="#" class="text-decoration-none">Политикой конфиденциальности</a>
+                                </label>
+                            </div>
+                            <div class="form-check mt-2">
+                                <input class="form-check-input" type="checkbox" id="parental_consent" name="parental_consent" required>
+                                <label class="form-check-label" for="parental_consent">
+                                    У меня есть разрешение родителей на использование платформы (для пользователей до 16 лет)
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid mb-4">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-user-plus me-2"></i>Создать аккаунт
+                            </button>
+                        </div>
+                        
+                        <div class="text-center">
+                            <p class="mb-0">Уже есть аккаунт? 
+                                <a href="{{ url_for('login') }}" class="text-decoration-none fw-semibold">Войти</a>
+                            </p>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="card border-0 shadow-sm mt-4">
+                <div class="card-body">
+                    <h6 class="mb-3"><i class="fas fa-shield-alt me-2 text-primary"></i>Безопасность данных</h6>
+                    <p class="small text-muted mb-0">
+                        Ваши данные защищены и используются только для организации встреч и связи. 
+                        Мы никогда не передаем личную информацию третьим лицам. Все встречи модерируются 
+                        для обеспечения безопасной среды общения.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
