@@ -1,155 +1,228 @@
 {% extends "base.html" %}
 
-{% block title %}Найти встречи - CulturaBridge{% endblock %}
+{% block title %}Все встречи - CulturaBridge{% endblock %}
 
 {% block content %}
-<div class="container py-5">
-    <div class="row">
-        <!-- Фильтры -->
-        <div class="col-lg-3 mb-4">
-            <div class="card border-0 shadow-sm sticky-top" style="top: 20px;">
-                <div class="card-body">
-                    <h5 class="mb-3"><i class="fas fa-filter me-2"></i> Фильтры</h5>
-                    
-                    <form method="GET" action="{{ url_for('meetings_list') }}">
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold">Тема</label>
-                            <select class="form-select" name="topic">
-                                <option value="">Все темы</option>
-                                {% for topic in popular_topics %}
-                                <option value="{{ topic }}" {% if filters.topic == topic %}selected{% endif %}>
-                                    {{ topic }}
-                                </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold">Язык</label>
-                            <select class="form-select" name="language">
-                                <option value="">Все языки</option>
-                                <option value="Английский" {% if filters.language == 'Английский' %}selected{% endif %}>Английский</option>
-                                <option value="Испанский" {% if filters.language == 'Испанский' %}selected{% endif %}>Испанский</option>
-                                <option value="Французский" {% if filters.language == 'Французский' %}selected{% endif %}>Французский</option>
-                                <option value="Немецкий" {% if filters.language == 'Немецкий' %}selected{% endif %}>Немецкий</option>
-                                <option value="Китайский" {% if filters.language == 'Китайский' %}selected{% endif %}>Китайский</option>
-                            </select>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold">Уровень</label>
-                            <select class="form-select" name="level">
-                                <option value="">Все уровни</option>
-                                <option value="Начинающий" {% if filters.level == 'Начинающий' %}selected{% endif %}>Начинающий</option>
-                                <option value="Средний" {% if filters.level == 'Средний' %}selected{% endif %}>Средний</option>
-                                <option value="Продвинутый" {% if filters.level == 'Продвинутый' %}selected{% endif %}>Продвинутый</option>
-                            </select>
-                        </div>
-                        
-                        <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-search me-2"></i> Применить фильтры
-                            </button>
-                            <a href="{{ url_for('meetings_list') }}" class="btn btn-outline-secondary">
-                                <i class="fas fa-times me-2"></i> Сбросить
-                            </a>
-                        </div>
-                    </form>
-                    
-                    <hr class="my-4">
-                    
-                    <div>
-                        <h6 class="mb-3">Популярные темы сейчас</h6>
-                        <div class="d-flex flex-wrap gap-2">
-                            {% for topic in popular_topics[:5] %}
-                            <a href="{{ url_for('meetings_list', topic=topic) }}" 
-                               class="badge bg-primary bg-opacity-10 text-primary text-decoration-none p-2">
-                                {{ topic }}
-                            </a>
-                            {% endfor %}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Список встреч -->
-        <div class="col-lg-9">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <div>
-                    <h2 class="mb-2">Найти встречи</h2>
-                    <p class="text-muted">Присоединяйтесь к тематическим обсуждениям с носителями языка</p>
-                </div>
-                <a href="{{ url_for('create_meeting') }}" class="btn btn-primary">
-                    <i class="fas fa-plus me-2"></i> Создать встречу
-                </a>
-            </div>
-            
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Все встречи</h1>
+        <a href="{{ url_for('create_meeting') }}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Создать встречу
+        </a>
+    </div>
+
+    <!-- Табсы для фильтрации встреч -->
+    <ul class="nav nav-tabs mb-4" id="meetingsTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="all-tab" data-bs-toggle="tab" 
+                    data-bs-target="#all" type="button" role="tab">
+                Все встречи
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="filtered-tab" data-bs-toggle="tab" 
+                    data-bs-target="#filtered" type="button" role="tab">
+                Поиск и фильтры
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="meetingsTabContent">
+        <!-- Все встречи -->
+        <div class="tab-pane fade show active" id="all" role="tabpanel">
             {% if meetings %}
-            <div class="row row-cols-1 row-cols-md-2 g-4">
+            <div class="row">
                 {% for meeting in meetings %}
-                <div class="col">
-                    <div class="card h-100 border-0 shadow-sm meeting-card">
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header {% if meeting.scheduled_time > current_time %}bg-primary text-white{% else %}bg-secondary text-white{% endif %}">
+                            <h5 class="card-title mb-0">{{ meeting.title }}</h5>
+                            {% if meeting.moderator_id == current_user.id %}
+                            <span class="badge bg-light text-dark">Моя встреча</span>
+                            {% endif %}
+                        </div>
                         <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-start mb-3">
-                                <div>
-                                    <h5 class="card-title mb-1">{{ meeting.title }}</h5>
-                                    <div class="d-flex align-items-center gap-2">
-                                        <span class="badge language-badge">{{ meeting.language }}</span>
-                                        <span class="badge bg-secondary">{{ meeting.topic }}</span>
-                                    </div>
-                                </div>
-                                <span class="badge bg-light text-dark">
-                                    <i class="fas fa-users me-1"></i>
-                                    {{ meeting.current_participants }}/{{ meeting.max_participants }}
-                                </span>
+                            <p class="card-text">{{ meeting.description|truncate(100) }}</p>
+                            <div class="mb-2">
+                                <span class="badge bg-info">{{ meeting.language }}</span>
+                                <span class="badge bg-secondary">{{ meeting.level }}</span>
+                                <span class="badge bg-success">{{ meeting.topic }}</span>
                             </div>
-                            
-                            <p class="card-text text-muted mb-3">{{ meeting.description[:100] }}{% if meeting.description|length > 100 %}...{% endif %}</p>
-                            
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <div>
-                                    <small class="text-muted d-block">
-                                        <i class="fas fa-signal me-1"></i> {{ meeting.level }}
-                                    </small>
-                                    <small class="text-muted">
-                                        <i class="fas fa-clock me-1"></i>
-                                        {{ meeting.scheduled_time.strftime('%d.%m.%Y %H:%M') }}
-                                    </small>
-                                </div>
-                                <div class="text-end">
-                                    <small class="d-block text-muted">
-                                        <i class="fas fa-user-check me-1"></i>
-                                        Модератор
-                                    </small>
-                                    <small class="text-muted">{{ meeting.moderator.username }}</small>
-                                </div>
-                            </div>
-                            
-                            <div class="d-grid">
-                                <a href="{{ url_for('meeting_detail', room_id=meeting.id) }}" 
-                                   class="btn btn-outline-primary">
-                                    <i class="fas fa-info-circle me-2"></i> Подробнее
-                                </a>
-                            </div>
+                            <p class="mb-1">
+                                <i class="far fa-calendar"></i>
+                                {{ meeting.scheduled_time.strftime('%d.%m.%Y %H:%M') }}
+                            </p>
+                            <p class="mb-1">
+                                <i class="far fa-clock"></i>
+                                {{ meeting.duration }} минут
+                            </p>
+                            <p class="mb-1">
+                                <i class="fas fa-users"></i>
+                                Участников: {{ meeting.participants|length }}/{{ meeting.max_participants }}
+                            </p>
+                            <p class="mb-1">
+                                <i class="fas fa-user"></i>
+                                Организатор: 
+                                {% if meeting.moderator %}
+                                    {{ meeting.moderator.username }}
+                                {% else %}
+                                    Аноним
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="card-footer bg-transparent">
+                            {% if meeting.moderator_id != current_user.id %}
+                                {% if meeting.participants|length < meeting.max_participants %}
+                                <button class="btn btn-success btn-sm" 
+                                        onclick="joinMeeting({{ meeting.id }})">
+                                    <i class="fas fa-sign-in-alt"></i> Присоединиться
+                                </button>
+                                {% else %}
+                                <span class="badge bg-danger">Мест нет</span>
+                                {% endif %}
+                            {% endif %}
                         </div>
                     </div>
                 </div>
                 {% endfor %}
             </div>
             {% else %}
-            <div class="text-center py-5">
-                <div class="bg-light rounded-circle d-inline-flex p-4 mb-3">
-                    <i class="fas fa-calendar-times fa-2x text-muted"></i>
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i> Пока нет активных встреч. 
+                <a href="{{ url_for('create_meeting') }}">Создайте первую!</a>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Поиск и фильтры -->
+        <div class="tab-pane fade" id="filtered" role="tabpanel">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">Найти встречу</h5>
+                    <form method="GET" action="{{ url_for('meetings_list') }}" class="row g-3">
+                        <div class="col-md-4">
+                            <label for="topic" class="form-label">Тема</label>
+                            <input type="text" class="form-control" id="topic" name="topic" 
+                                   placeholder="Введите тему" value="{{ filters.topic or '' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="language" class="form-label">Язык</label>
+                            <select class="form-select" id="language" name="language">
+                                <option value="">Все языки</option>
+                                <option value="Русский" {% if filters.language == 'Русский' %}selected{% endif %}>Русский</option>
+                                <option value="Английский" {% if filters.language == 'Английский' %}selected{% endif %}>Английский</option>
+                                <option value="Испанский" {% if filters.language == 'Испанский' %}selected{% endif %}>Испанский</option>
+                                <option value="Французский" {% if filters.language == 'Французский' %}selected{% endif %}>Французский</option>
+                                <option value="Немецкий" {% if filters.language == 'Немецкий' %}selected{% endif %}>Немецкий</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="level" class="form-label">Уровень</label>
+                            <select class="form-select" id="level" name="level">
+                                <option value="">Все уровни</option>
+                                <option value="Начинающий" {% if filters.level == 'Начинающий' %}selected{% endif %}>Начинающий</option>
+                                <option value="Средний" {% if filters.level == 'Средний' %}selected{% endif %}>Средний</option>
+                                <option value="Продвинутый" {% if filters.level == 'Продвинутый' %}selected{% endif %}>Продвинутый</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between">
+                                <a href="{{ url_for('meetings_list') }}" class="btn btn-secondary">
+                                    Сбросить фильтры
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-search"></i> Найти
+                                </button>
+                            </div>
+                        </div>
+                    </form>
                 </div>
-                <h4>Нет доступных встреч</h4>
-                <p class="text-muted mb-4">Попробуйте изменить фильтры или создайте свою первую встречу!</p>
-                <a href="{{ url_for('create_meeting') }}" class="btn btn-primary">
-                    <i class="fas fa-plus me-2"></i> Создать встречу
-                </a>
+            </div>
+
+            {% if popular_topics %}
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Популярные темы</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex flex-wrap gap-2">
+                        {% for topic in popular_topics %}
+                        <a href="{{ url_for('meetings_list', topic=topic) }}" 
+                           class="badge bg-info text-decoration-none">
+                            {{ topic }}
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
             </div>
             {% endif %}
         </div>
     </div>
 </div>
+
+<!-- JavaScript для табсов и действий -->
+<script>
+// Активация табсов Bootstrap
+document.addEventListener('DOMContentLoaded', function() {
+    const triggerTabList = [].slice.call(document.querySelectorAll('#meetingsTab button'))
+    triggerTabList.forEach(function (triggerEl) {
+        const tabTrigger = new bootstrap.Tab(triggerEl)
+        triggerEl.addEventListener('click', function (event) {
+            event.preventDefault()
+            tabTrigger.show()
+        })
+    })
+});
+
+// Функция присоединения к встрече
+function joinMeeting(meetingId) {
+    if (confirm('Вы уверены, что хотите присоединиться к этой встрече?')) {
+        fetch(`/meeting/${meetingId}/join`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Вы успешно присоединились к встрече!');
+                location.reload();
+            } else {
+                alert('Ошибка: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Произошла ошибка');
+        });
+    }
+}
+</script>
+
+<style>
+.card {
+    transition: transform 0.2s;
+    border: 1px solid #dee2e6;
+}
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+.card-header {
+    border-bottom: 1px solid rgba(0,0,0,0.125);
+}
+.badge {
+    font-size: 0.8em;
+    margin-right: 5px;
+}
+.nav-tabs .nav-link {
+    color: #495057;
+    border: 1px solid transparent;
+}
+.nav-tabs .nav-link.active {
+    color: #0d6efd;
+    border-color: #dee2e6 #dee2e6 #fff;
+}
+</style>
 {% endblock %}

@@ -25,10 +25,11 @@ class User(UserMixin, db.Model):
     is_verified = db.Column(db.Boolean, default=False)
     verification_token = db.Column(db.String(100))
     
-    # Связи
-    meetings = db.relationship('MeetingParticipant', backref='user', lazy=True)
+    # Связи - УБЕРИТЕ ИЛИ ИЗМЕНИТЕ КОНФЛИКТУЮЩИЕ backref
+    meetings = db.relationship('MeetingParticipant', backref='participant_user', lazy=True)  # ИЗМЕНИТЕ backref
     moderated_rooms = db.relationship('MeetingRoom', foreign_keys='MeetingRoom.moderator_id', backref='moderator')
-    room_participations = db.relationship('RoomParticipant', backref='user_rel', lazy=True)
+    room_participations = db.relationship('RoomParticipant', backref='room_participant_user', lazy=True)  # ИЗМЕНИТЕ backref
+    moderated_meetings = db.relationship('Meeting', foreign_keys='Meeting.moderator_id', backref='meeting_moderator')  # ДОБАВЬТЕ ЭТО
 
     def set_password(self, password):
         self.password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
@@ -52,7 +53,7 @@ class Meeting(db.Model):
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
-    participants = db.relationship('MeetingParticipant', backref='meeting', lazy=True)
+    participants = db.relationship('MeetingParticipant', backref='meeting_rel', lazy=True)  # ИЗМЕНИТЕ backref
 
 class MeetingParticipant(db.Model):
     __tablename__ = 'meeting_participants'
@@ -64,6 +65,9 @@ class MeetingParticipant(db.Model):
     rating = db.Column(db.Integer)
     
     __table_args__ = (db.UniqueConstraint('user_id', 'meeting_id', name='unique_participation'),)
+    
+    # Добавьте отношение user
+    user = db.relationship('User', backref='user_meeting_participations')  # ИЗМЕНИТЕ backref
 
 class MeetingRoom(db.Model):
     __tablename__ = 'meeting_rooms'
@@ -94,4 +98,5 @@ class RoomParticipant(db.Model):
     
     __table_args__ = (db.UniqueConstraint('user_id', 'room_id', name='unique_room_participant'),)
     
-    room = db.relationship('MeetingRoom', backref='participants_rel')
+    room = db.relationship('MeetingRoom', backref='room_participants_rel')
+    user = db.relationship('User', backref='user_room_participations')  # ИЗМЕНИТЕ backref

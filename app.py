@@ -152,7 +152,7 @@ def profile():
                          learning_languages_list=learning_languages_list)
 
 # Система встреч
-@app.route('/meetings/create', methods=['GET', 'POST'])
+@app.route('/create_meeting', methods=['GET', 'POST'])
 @login_required
 def create_meeting():
     if request.method == 'POST':
@@ -161,83 +161,104 @@ def create_meeting():
         topic = request.form.get('topic')
         language = request.form.get('language')
         level = request.form.get('level')
-        max_participants = int(request.form.get('max_participants', 6))
+        scheduled_time_str = request.form.get('scheduled_time')
+        max_participants = request.form.get('max_participants', 6)
         
-        date_str = request.form.get('date')
-        time_str = request.form.get('time')
-        scheduled_time = datetime.strptime(f"{date_str} {time_str}", "%Y-%m-%d %H:%M")
+        if not all([title, topic, language, level, scheduled_time_str]):
+            flash('Заполните все обязательные поля', 'danger')
+            return render_template('create_meeting.html')
         
-        room, message = MeetingService.create_room(
-            user_id=current_user.id,
-            title=title,
-            description=description,
-            topic=topic,
-            language=language,
-            level=level,
-            scheduled_time=scheduled_time,
-            max_participants=max_participants
-        )
-        
-        if room:
-            flash('Встреча успешно создана!', 'success')
-            return redirect(url_for('meeting_detail', room_id=room.id))
-        else:
-            flash(message, 'danger')
-    
-    topics = ['🎮 Видеоигры', '🎵 K-pop и J-pop', '🎬 Фильмы и сериалы', 
-              '📚 Литература', '🌍 Экология', '⚽ Спорт', '🍿 Культура питания',
-              '💻 Технологии', '🎨 Искусство', '✈️ Путешествия']
-    
-    languages = ['Английский', 'Испанский', 'Французский', 'Немецкий', 
-                 'Китайский', 'Японский', 'Корейский', 'Итальянский']
-    
-    levels = ['Начинающий', 'Средний', 'Продвинутый']
-    
-    return render_template('create_meeting.html', 
-                         topics=topics, 
-                         languages=languages, 
-                         levels=levels)
+        try:
+            from datetime import datetime
+            scheduled_time = datetime.strptime(scheduled_time_str, '%Y-%m-%dT%H:%M')
+            
+            meeting = Meeting(
+                title=title,
+                description=description,
+                topic=topic,
+                language=language,
+                level=level,
+                moderator_id=current_user.id,
+                scheduled_time=scheduled_time,
+                max_participants=int(max_participants),
+                is_active=True
+            )
+            
+            db.session.add(meeting)
+            db.session.commit()
+            
+            # Добавляем создателя как участника
+            participant = MeetingParticipant(
+                user_id=current_user.id,
+                meeting_id=meeting.id
+            )
+            db.session.add(participant)
+            db.session.commit()
 
+            flash('Встреча успешно создана!', 'success')
+            return redirect(url_for('meeting_detail', meeting_id=meeting.id))
+            
+        except ValueError as e:
+            flash(f'Ошибка в формате даты: {str(e)}', 'danger')
+            return render_template('create_meeting.html')
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Ошибка при создании встречи: {str(e)}', 'danger')
+            return render_template('create_meeting.html')
+    
+    return render_template('create_meeting.html')
+    
 @app.route('/meetings')
 @login_required
 def meetings_list():
+    # Получаем фильтры из URL
     filters = {
         'topic': request.args.get('topic'),
         'language': request.args.get('language'),
         'level': request.args.get('level')
     }
     
-    upcoming_meetings = MeetingService.get_upcoming_rooms(
-        user_id=current_user.id,
-        filters=filters
-    )
+    # Базовый запрос для всех активных встреч
+    query = Meeting.query.filter_by(is_active=True)
     
-    popular_topics = MeetingService.get_popular_topics()
+    # Применяем фильтры
+    if filters['topic']:
+        query = query.filter(Meeting.topic.ilike(f"%{filters['topic']}%"))
+    
+    if filters['language']:
+        query = query.filter_by(language=filters['language'])
+    
+    if filters['level']:
+        query = query.filter_by(level=filters['level'])
+    
+    # Сортируем по дате (ближайшие первые)
+    upcoming_meetings = query.order_by(Meeting.scheduled_time.asc()).all()
+    
+    # Получаем популярные темы (если функция есть)
+    try:
+        popular_topics = MeetingService.get_popular_topics()
+    except:
+        # Если MeetingService не существует, получаем популярные темы напрямую
+        popular_topics = db.session.query(
+            Meeting.topic,
+            db.func.count(Meeting.id).label('count')
+        ).group_by(Meeting.topic)\
+         .order_by(db.desc('count'))\
+         .limit(10)\
+         .all()
+        popular_topics = [topic for topic, count in popular_topics]
     
     return render_template('meetings.html',
                          meetings=upcoming_meetings,
                          popular_topics=popular_topics,
-                         filters=filters)
+                         filters=filters,
+                         current_time=datetime.utcnow())
 
-@app.route('/meetings/<int:room_id>')
+@app.route('/meeting/<int:meeting_id>')
 @login_required
-def meeting_detail(room_id):
-    room = MeetingRoom.query.get_or_404(room_id)
-    
-    is_participant = RoomParticipant.query.filter_by(
-        user_id=current_user.id,
-        room_id=room_id
-    ).first() is not None
-    
-    is_moderator = room.moderator_id == current_user.id
-    
-    participants = RoomParticipant.query.filter_by(room_id=room_id).all()
-    
-    return render_template('meeting_detail.html',
-                         room=room,
-                         is_participant=is_participant,
-                         is_moderator=is_moderator,
-                         participants=participants)
+def meeting_detail(meeting_id):
+    meeting = Meeting.query.get_or_404(meeting_id)
+    return render_template('meeting_detail.html', meeting=meeting)
 
 @app.route('/meetings/<int:room_id>/join', methods=['POST'])
 @login_required
@@ -251,24 +272,36 @@ def join_meeting(room_id):
     
     return redirect(url_for('meeting_detail', room_id=room_id))
 
-@app.route('/my-meetings')
+@app.route('/my_meetings')
 @login_required
 def my_meetings():
-    upcoming = MeetingService.get_user_rooms(current_user.id)
+    # Получаем встречи, где пользователь является участником
+    # Через таблицу MeetingParticipant
+    participant_meetings = Meeting.query\
+        .join(MeetingParticipant, Meeting.id == MeetingParticipant.meeting_id)\
+        .filter(MeetingParticipant.user_id == current_user.id)\
+        .order_by(Meeting.scheduled_time.asc())\
+        .all()
     
-    past_meetings = MeetingRoom.query.join(
-        RoomParticipant
-    ).filter(
-        RoomParticipant.user_id == current_user.id,
-        MeetingRoom.scheduled_time <= datetime.utcnow(),
-        MeetingRoom.is_active == False
-    ).order_by(
-        MeetingRoom.scheduled_time.desc()
-    ).all()
+    # Получаем встречи, где пользователь модератор
+    moderated_meetings = Meeting.query\
+        .filter(Meeting.moderator_id == current_user.id)\
+        .order_by(Meeting.scheduled_time.asc())\
+        .all()
     
-    return render_template('my_meetings.html',
-                         upcoming_meetings=upcoming,
-                         past_meetings=past_meetings)
+    # Объединяем и убираем дубликаты
+    all_meetings = participant_meetings + moderated_meetings
+    unique_meetings = []
+    seen_ids = set()
+    
+    for meeting in all_meetings:
+        if meeting.id not in seen_ids:
+            seen_ids.add(meeting.id)
+            unique_meetings.append(meeting)
+    
+    return render_template('my_meetings.html', 
+                         meetings=unique_meetings,
+                         current_time=datetime.utcnow())
 
 # API эндпоинты
 @app.route('/api/check-username')

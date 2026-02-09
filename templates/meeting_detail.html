@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}Детали встречи - CulturaBridge{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="mb-0">{{ meeting.title }}</h2>
+                    <p class="text-muted mb-0">Создано: {{ meeting.created_at.strftime('%d.%m.%Y %H:%M') }}</p>
+                </div>
+                <div class="card-body">
+                    
+                    <!-- Сообщение об успешном создании -->
+                    <div class="alert alert-success" role="alert">
+                        <i class="fas fa-check-circle"></i> Встреча успешно создана!
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h5>Описание:</h5>
+                        <p>{{ meeting.description or 'Описание отсутствует' }}</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h5>Основная информация:</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>Тема:</strong> {{ meeting.topic }}</p>
+                                <p><strong>Язык:</strong> {{ meeting.language }}</p>
+                                <p><strong>Уровень:</strong> {{ meeting.level }}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>Дата и время:</strong> {{ meeting.scheduled_time.strftime('%d.%m.%Y %H:%M') }}</p>
+                                <p><strong>Длительность:</strong> {{ meeting.duration }} минут</p>
+                                <p><strong>Макс. участников:</strong> {{ meeting.max_participants }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h5>Статус:</h5>
+                        <span class="badge {% if meeting.is_active %}bg-success{% else %}bg-secondary{% endif %}">
+                            {% if meeting.is_active %}Активна{% else %}Неактивна{% endif %}
+                        </span>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <a href="{{ url_for('my_meetings') }}" class="btn btn-primary">
+                            ← Вернуться к моим встречам
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
