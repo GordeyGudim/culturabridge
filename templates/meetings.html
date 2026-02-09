@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block title %}Найти встречи - CulturaBridge{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <!-- Фильтры -->
+        <div class="col-lg-3 mb-4">
+            <div class="card border-0 shadow-sm sticky-top" style="top: 20px;">
+                <div class="card-body">
+                    <h5 class="mb-3"><i class="fas fa-filter me-2"></i> Фильтры</h5>
+                    
+                    <form method="GET" action="{{ url_for('meetings_list') }}">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Тема</label>
+                            <select class="form-select" name="topic">
+                                <option value="">Все темы</option>
+                                {% for topic in popular_topics %}
+                                <option value="{{ topic }}" {% if filters.topic == topic %}selected{% endif %}>
+                                    {{ topic }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Язык</label>
+                            <select class="form-select" name="language">
+                                <option value="">Все языки</option>
+                                <option value="Английский" {% if filters.language == 'Английский' %}selected{% endif %}>Английский</option>
+                                <option value="Испанский" {% if filters.language == 'Испанский' %}selected{% endif %}>Испанский</option>
+                                <option value="Французский" {% if filters.language == 'Французский' %}selected{% endif %}>Французский</option>
+                                <option value="Немецкий" {% if filters.language == 'Немецкий' %}selected{% endif %}>Немецкий</option>
+                                <option value="Китайский" {% if filters.language == 'Китайский' %}selected{% endif %}>Китайский</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Уровень</label>
+                            <select class="form-select" name="level">
+                                <option value="">Все уровни</option>
+                                <option value="Начинающий" {% if filters.level == 'Начинающий' %}selected{% endif %}>Начинающий</option>
+                                <option value="Средний" {% if filters.level == 'Средний' %}selected{% endif %}>Средний</option>
+                                <option value="Продвинутый" {% if filters.level == 'Продвинутый' %}selected{% endif %}>Продвинутый</option>
+                            </select>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-search me-2"></i> Применить фильтры
+                            </button>
+                            <a href="{{ url_for('meetings_list') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times me-2"></i> Сбросить
+                            </a>
+                        </div>
+                    </form>
+                    
+                    <hr class="my-4">
+                    
+                    <div>
+                        <h6 class="mb-3">Популярные темы сейчас</h6>
+                        <div class="d-flex flex-wrap gap-2">
+                            {% for topic in popular_topics[:5] %}
+                            <a href="{{ url_for('meetings_list', topic=topic) }}" 
+                               class="badge bg-primary bg-opacity-10 text-primary text-decoration-none p-2">
+                                {{ topic }}
+                            </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Список встреч -->
+        <div class="col-lg-9">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="mb-2">Найти встречи</h2>
+                    <p class="text-muted">Присоединяйтесь к тематическим обсуждениям с носителями языка</p>
+                </div>
+                <a href="{{ url_for('create_meeting') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i> Создать встречу
+                </a>
+            </div>
+            
+            {% if meetings %}
+            <div class="row row-cols-1 row-cols-md-2 g-4">
+                {% for meeting in meetings %}
+                <div class="col">
+                    <div class="card h-100 border-0 shadow-sm meeting-card">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <div>
+                                    <h5 class="card-title mb-1">{{ meeting.title }}</h5>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="badge language-badge">{{ meeting.language }}</span>
+                                        <span class="badge bg-secondary">{{ meeting.topic }}</span>
+                                    </div>
+                                </div>
+                                <span class="badge bg-light text-dark">
+                                    <i class="fas fa-users me-1"></i>
+                                    {{ meeting.current_participants }}/{{ meeting.max_participants }}
+                                </span>
+                            </div>
+                            
+                            <p class="card-text text-muted mb-3">{{ meeting.description[:100] }}{% if meeting.description|length > 100 %}...{% endif %}</p>
+                            
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div>
+                                    <small class="text-muted d-block">
+                                        <i class="fas fa-signal me-1"></i> {{ meeting.level }}
+                                    </small>
+                                    <small class="text-muted">
+                                        <i class="fas fa-clock me-1"></i>
+                                        {{ meeting.scheduled_time.strftime('%d.%m.%Y %H:%M') }}
+                                    </small>
+                                </div>
+                                <div class="text-end">
+                                    <small class="d-block text-muted">
+                                        <i class="fas fa-user-check me-1"></i>
+                                        Модератор
+                                    </small>
+                                    <small class="text-muted">{{ meeting.moderator.username }}</small>
+                                </div>
+                            </div>
+                            
+                            <div class="d-grid">
+                                <a href="{{ url_for('meeting_detail', room_id=meeting.id) }}" 
+                                   class="btn btn-outline-primary">
+                                    <i class="fas fa-info-circle me-2"></i> Подробнее
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <div class="bg-light rounded-circle d-inline-flex p-4 mb-3">
+                    <i class="fas fa-calendar-times fa-2x text-muted"></i>
+                </div>
+                <h4>Нет доступных встреч</h4>
+                <p class="text-muted mb-4">Попробуйте изменить фильтры или создайте свою первую встречу!</p>
+                <a href="{{ url_for('create_meeting') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i> Создать встречу
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

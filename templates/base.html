@@ -111,6 +111,56 @@
             color: white;
             font-weight: bold;
         }
+        
+        .dashboard-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary);
+            line-height: 1;
+        }
+        
+        .stat-label {
+            color: var(--dark);
+            font-weight: 600;
+            margin-top: 0.5rem;
+        }
+        
+        .level-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .level-beginner {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        
+        .level-intermediate {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        
+        .level-advanced {
+            background: #dbeafe;
+            color: #1e40af;
+        }
     </style>
     {% block extra_css %}{% endblock %}
 </head>
@@ -146,7 +196,7 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#">
+                        <a class="nav-link" href="{{ url_for('meetings_list') }}">
                             <i class="fas fa-comments me-1"></i> Встречи
                         </a>
                     </li>

@@ -6,13 +6,11 @@ import re
 class AuthValidator:
     @staticmethod
     def validate_email(email):
-        """Проверка email"""
         pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
         return re.match(pattern, email) is not None
     
     @staticmethod
     def validate_username(username):
-        """Проверка имени пользователя"""
         if len(username) < 3 or len(username) > 50:
             return False, "Имя пользователя должно быть от 3 до 50 символов"
         
@@ -23,7 +21,6 @@ class AuthValidator:
     
     @staticmethod
     def validate_password(password):
-        """Проверка сложности пароля"""
         if len(password) < 8:
             return False, "Пароль должен содержать минимум 8 символов"
         
@@ -40,11 +37,10 @@ class AuthValidator:
     
     @staticmethod
     def validate_age(age):
-        """Проверка возраста (только для подростков)"""
         try:
             age_int = int(age)
-            if age_int < current_app.config['MIN_AGE'] or age_int > current_app.config['MAX_AGE']:
-                return False, f"Возраст должен быть от {current_app.config['MIN_AGE']} до {current_app.config['MAX_AGE']} лет"
+            if age_int < 13 or age_int > 19:
+                return False, "Возраст должен быть от 13 до 19 лет"
             return True, ""
         except ValueError:
             return False, "Возраст должен быть числом"
@@ -52,7 +48,6 @@ class AuthValidator:
 class AuthService:
     @staticmethod
     def register_user(form_data):
-        """Регистрация нового пользователя"""
         # Валидация данных
         if not AuthValidator.validate_email(form_data['email']):
             return False, "Некорректный email адрес"
@@ -101,7 +96,6 @@ class AuthService:
     
     @staticmethod
     def authenticate_user(username, password):
-        """Аутентификация пользователя"""
         user = User.query.filter_by(username=username).first()
         
         if not user:
