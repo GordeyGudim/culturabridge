@@ -3,99 +3,78 @@
 {% block title %}Создать встречу - CulturaBridge{% endblock %}
 
 {% block content %}
-<div class="container py-5">
-    <div class="row justify-content-center">
-        <div class="col-lg-8">
-            <div class="card border-0 shadow-lg">
-                <div class="card-body p-4 p-md-5">
-                    <h2 class="card-title mb-4"><i class="fas fa-plus-circle me-2"></i> Создать новую встречу</h2>
-                    
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="mb-0">Создать новую встречу</h2>
+                </div>
+                <div class="card-body">
                     <form method="POST" action="{{ url_for('create_meeting') }}">
-                        <div class="mb-4">
-                            <label for="title" class="form-label fw-semibold">Название встречи *</label>
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Название встречи *</label>
                             <input type="text" class="form-control" id="title" name="title" 
-                                   placeholder="Например: Обсуждение новых игр на английском" required>
-                            <div class="form-text">Придумайте интересное название, чтобы привлечь участников</div>
+                                   required placeholder="Введите название встречи">
                         </div>
                         
-                        <div class="mb-4">
-                            <label for="description" class="form-label fw-semibold">Описание</label>
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Описание</label>
                             <textarea class="form-control" id="description" name="description" 
-                                      rows="3" placeholder="О чем будете обсуждать?"></textarea>
-                            <div class="form-text">Расскажите, что будет происходить на встрече</div>
+                                      rows="4" placeholder="Опишите цель встречи..."></textarea>
                         </div>
                         
-                        <div class="row mb-4">
+                        <div class="row">
                             <div class="col-md-6">
-                                <label for="topic" class="form-label fw-semibold">Тема *</label>
-                                <select class="form-select" id="topic" name="topic" required>
-                                    <option value="" selected disabled>Выберите тему</option>
-                                    {% for topic in topics %}
-                                    <option value="{{ topic }}">{{ topic }}</option>
-                                    {% endfor %}
-                                    <option value="Другое">Другая тема</option>
-                                </select>
+                                <div class="mb-3">
+                                    <label for="topic" class="form-label">Тема</label>
+                                    <input type="text" class="form-control" id="topic" name="topic" 
+                                           value="Общий" required>
+                                </div>
                             </div>
                             <div class="col-md-6">
-                                <label for="language" class="form-label fw-semibold">Язык общения *</label>
-                                <select class="form-select" id="language" name="language" required>
-                                    <option value="" selected disabled>Выберите язык</option>
-                                    {% for lang in languages %}
-                                    <option value="{{ lang }}">{{ lang }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                        </div>
-                        
-                        <div class="row mb-4">
-                            <div class="col-md-6">
-                                <label for="level" class="form-label fw-semibold">Уровень языка *</label>
-                                <select class="form-select" id="level" name="level" required>
-                                    <option value="" selected disabled>Выберите уровень</option>
-                                    {% for level in levels %}
-                                    <option value="{{ level }}">{{ level }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="max_participants" class="form-label fw-semibold">Максимум участников</label>
-                                <input type="number" class="form-control" id="max_participants" 
-                                       name="max_participants" min="2" max="10" value="6">
-                                <div class="form-text">Рекомендуется 4-6 человек для качественного общения</div>
+                                <div class="mb-3">
+                                    <label for="language" class="form-label">Язык</label>
+                                    <select class="form-select" id="language" name="language" required>
+                                        <option value="Русский">Русский</option>
+                                        <option value="Английский">Английский</option>
+                                        <option value="Испанский">Испанский</option>
+                                        <option value="Французский">Французский</option>
+                                        <option value="Немецкий">Немецкий</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
                         
-                        <div class="row mb-4">
+                        <div class="row">
                             <div class="col-md-6">
-                                <label for="date" class="form-label fw-semibold">Дата встречи *</label>
-                                <input type="date" class="form-control" id="date" name="date" 
-                                       min="{{ today }}" required>
+                                <div class="mb-3">
+                                    <label for="level" class="form-label">Уровень</label>
+                                    <select class="form-select" id="level" name="level" required>
+                                        <option value="Начинающий">Начинающий</option>
+                                        <option value="Средний">Средний</option>
+                                        <option value="Продвинутый">Продвинутый</option>
+                                    </select>
+                                </div>
                             </div>
                             <div class="col-md-6">
-                                <label for="time" class="form-label fw-semibold">Время *</label>
-                                <input type="time" class="form-control" id="time" name="time" required>
+                                <div class="mb-3">
+                                    <label for="scheduled_time" class="form-label">Дата и время</label>
+                                    <input type="datetime-local" class="form-control" id="scheduled_time" 
+                                           name="scheduled_time" required>
+                                </div>
                             </div>
                         </div>
                         
-                        <div class="alert alert-info">
-                            <h6><i class="fas fa-info-circle me-2"></i> Важно для модераторов</h6>
-                            <p class="mb-0 small">Как модератор встречи, вы отвечаете за:
-                                <ul class="mb-0">
-                                    <li>Создание комфортной атмосферы</li>
-                                    <li>Следование теме обсуждения</li>
-                                    <li>Обеспечение безопасности всех участников</li>
-                                    <li>Начало и завершение встречи вовремя</li>
-                                </ul>
-                            </p>
+                        <div class="mb-3">
+                            <label for="max_participants" class="form-label">Макс. участников</label>
+                            <input type="number" class="form-control" id="max_participants" 
+                                   name="max_participants" value="6" min="2" max="20">
                         </div>
                         
-                        <div class="d-flex justify-content-between mt-4">
-                            <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">
-                                <i class="fas fa-arrow-left me-2"></i> Назад
-                            </a>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-calendar-plus me-2"></i> Создать встречу
-                            </button>
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('my_meetings') }}" class="btn btn-secondary">Отмена</a>
+                            <button type="submit" class="btn btn-primary">Создать встречу</button>
                         </div>
                     </form>
                 </div>
@@ -105,12 +84,22 @@
 </div>
 
 <script>
-    // Устанавливаем минимальную дату - сегодня
-    document.getElementById('date').min = new Date().toISOString().split('T')[0];
-    
-    // Устанавливаем время по умолчанию - следующий час
+// Установить дату и время по умолчанию (завтра, 19:00)
+document.addEventListener('DOMContentLoaded', function() {
     const now = new Date();
-    now.setHours(now.getHours() + 1);
-    document.getElementById('time').value = now.toTimeString().slice(0, 5);
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(19, 0, 0, 0);
+    
+    // Форматирование для datetime-local
+    const year = tomorrow.getFullYear();
+    const month = String(tomorrow.getMonth() + 1).padStart(2, '0');
+    const day = String(tomorrow.getDate()).padStart(2, '0');
+    const hours = String(tomorrow.getHours()).padStart(2, '0');
+    const minutes = String(tomorrow.getMinutes()).padStart(2, '0');
+    
+    document.getElementById('scheduled_time').value = 
+        `${year}-${month}-${day}T${hours}:${minutes}`;
+});
 </script>
 {% endblock %}
