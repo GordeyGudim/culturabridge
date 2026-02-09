@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}Мой профиль - CulturaBridge{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card border-0 shadow-lg">
+                <div class="card-body p-4 p-md-5">
+                    <div class="d-flex justify-content-between align-items-center mb-5">
+                        <div>
+                            <h2 class="card-title mb-2"><i class="fas fa-user-edit me-2"></i> Мой профиль</h2>
+                            <p class="text-muted">Управляйте вашей личной информацией и настройками</p>
+                        </div>
+                        <div class="user-avatar" style="width: 80px; height: 80px; font-size: 2rem;">
+                            {{ user.username[0]|upper }}
+                        </div>
+                    </div>
+                    
+                    <form method="POST" action="{{ url_for('profile') }}">
+                        <div class="row">
+                            <!-- Основная информация -->
+                            <div class="col-md-6 mb-4">
+                                <h5 class="mb-4 border-bottom pb-2">Основная информация</h5>
+                                
+                                <div class="mb-3">
+                                    <label for="username" class="form-label fw-semibold">Имя пользователя</label>
+                                    <input type="text" class="form-control" id="username" value="{{ user.username }}" disabled>
+                                    <div class="form-text">Имя пользователя нельзя изменить</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="email" class="form-label fw-semibold">Email</label>
+                                    <input type="email" class="form-control" id="email" value="{{ user.email }}" disabled>
+                                    <div class="form-text">Для смены email обратитесь в поддержку</div>
+                                </div>
+                                
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label for="first_name" class="form-label fw-semibold">Имя</label>
+                                        <input type="text" class="form-control" id="first_name" name="first_name" 
+                                               value="{{ user.first_name }}" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="last_name" class="form-label fw-semibold">Фамилия</label>
+                                        <input type="text" class="form-control" id="last_name" name="last_name" 
+                                               value="{{ user.last_name }}" required>
+                                    </div>
+                                </div>
+                                
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label for="age" class="form-label fw-semibold">Возраст</label>
+                                        <input type="number" class="form-control" id="age" value="{{ user.age }}" disabled>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="country" class="form-label fw-semibold">Страна</label>
+                                        <select class="form-select" id="country" name="country" required>
+                                            <option value="Россия" {% if user.country == 'Россия' %}selected{% endif %}>Россия</option>
+                                            <option value="США" {% if user.country == 'США' %}selected{% endif %}>США</option>
+                                            <option value="Великобритания" {% if user.country == 'Великобритания' %}selected{% endif %}>Великобритания</option>
+                                            <option value="Германия" {% if user.country == 'Германия' %}selected{% endif %}>Германия</option>
+                                            <option value="Франция" {% if user.country == 'Франция' %}selected{% endif %}>Франция</option>
+                                            <option value="Испания" {% if user.country == 'Испания' %}selected{% endif %}>Испания</option>
+                                            <option value="Китай" {% if user.country == 'Китай' %}selected{% endif %}>Китай</option>
+                                            <option value="Япония" {% if user.country == 'Япония' %}selected{% endif %}>Япония</option>
+                                            <option value="Корея" {% if user.country == 'Корея' %}selected{% endif %}>Корея</option>
+                                            <option value="Бразилия" {% if user.country == 'Бразилия' %}selected{% endif %}>Бразилия</option>
+                                            <option value="Другая" {% if user.country == 'Другая' %}selected{% endif %}>Другая страна</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Языковые настройки -->
+                            <div class="col-md-6 mb-4">
+                                <h5 class="mb-4 border-bottom pb-2">Языковые настройки</h5>
+                                
+                                <div class="mb-3">
+                                    <label for="native_language" class="form-label fw-semibold">Родной язык</label>
+                                    <select class="form-select" id="native_language" name="native_language" required>
+                                        <option value="Русский" {% if user.native_language == 'Русский' %}selected{% endif %}>Русский</option>
+                                        <option value="Английский" {% if user.native_language == 'Английский' %}selected{% endif %}>Английский</option>
+                                        <option value="Испанский" {% if user.native_language == 'Испанский' %}selected{% endif %}>Испанский</option>
+                                        <option value="Французский" {% if user.native_language == 'Французский' %}selected{% endif %}>Французский</option>
+                                        <option value="Немецкий" {% if user.native_language == 'Немецкий' %}selected{% endif %}>Немецкий</option>
+                                        <option value="Китайский" {% if user.native_language == 'Китайский' %}selected{% endif %}>Китайский</option>
+                                        <option value="Японский" {% if user.native_language == 'Японский' %}selected{% endif %}>Японский</option>
+                                        <option value="Корейский" {% if user.native_language == 'Корейский' %}selected{% endif %}>Корейский</option>
+                                        <option value="Другой" {% if user.native_language == 'Другой' %}selected{% endif %}>Другой язык</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold">Языки для изучения *</label>
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <div class="form-check mb-2">
+                                                <input class="form-check-input" type="checkbox" name="learning_languages" value="Английский" id="lang_en"
+                                                       {% if 'Английский' in user.learning_languages.split(',') %}

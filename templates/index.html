@@ -1,0 +1,304 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Герой секция -->
+<section class="py-5" style="background: linear-gradient(135deg, #f5f7ff 0%, #e3e9ff 100%);">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <h1 class="display-4 fw-bold mb-4">Говори свободно, <span class="text-primary">обсуждая культуру</span></h1>
+                <p class="lead mb-4">CulturaBridge — безопасная онлайн-платформа для подростков 13-19 лет. Практикуйте иностранные языки, обсуждая актуальную культуру и новости со сверстниками из других стран.</p>
+                
+                <div class="d-flex flex-wrap gap-3 mb-5">
+                    {% if not current_user.is_authenticated %}
+                    <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg px-4">
+                        <i class="fas fa-user-plus me-2"></i>Начать бесплатно
+                    </a>
+                    <a href="{{ url_for('login') }}" class="btn btn-outline-primary btn-lg px-4">
+                        <i class="fas fa-sign-in-alt me-2"></i>Войти
+                    </a>
+                    {% else %}
+                    <a href="{{ url_for('dashboard') }}" class="btn btn-primary btn-lg px-4">
+                        <i class="fas fa-tachometer-alt me-2"></i>Личный кабинет
+                    </a>
+                    <a href="#" class="btn btn-outline-primary btn-lg px-4">
+                        <i class="fas fa-search me-2"></i>Найти встречи
+                    </a>
+                    {% endif %}
+                </div>
+                
+                <div class="row text-center">
+                    <div class="col-4">
+                        <div class="border-end">
+                            <h3 class="text-primary fw-bold">5,000+</h3>
+                            <p class="text-muted mb-0">Подростков</p>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="border-end">
+                            <h3 class="text-primary fw-bold">12</h3>
+                            <p class="text-muted mb-0">Языков</p>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <h3 class="text-primary fw-bold">50+</h3>
+                        <p class="text-muted mb-0">Встреч в неделю</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-6 mt-5 mt-lg-0">
+                <div class="card border-0 shadow-lg overflow-hidden">
+                    <div class="card-body p-0">
+                        <img src="https://images.unsplash.com/photo-1552664730-d307ca884978?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80" 
+                             class="img-fluid rounded-3" 
+                             alt="Подростки общаются онлайн">
+                        <div class="p-4">
+                            <h5 class="card-title mb-2">Живые встречи с модератором</h5>
+                            <p class="card-text text-muted">Общайтесь в небольших группах 4-6 человек под руководством обученного модератора.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Особенности -->
+<section class="py-5 bg-white">
+    <div class="container">
+        <h2 class="text-center mb-5">Почему <span class="text-primary">CulturaBridge</span>?</h2>
+        
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body text-center p-4">
+                        <div class="bg-primary bg-opacity-10 rounded-circle d-inline-flex p-3 mb-4">
+                            <i class="fas fa-comments fa-2x text-primary"></i>
+                        </div>
+                        <h4 class="card-title mb-3">Живое общение</h4>
+                        <p class="card-text">Обсуждайте музыку, фильмы, игры, модные тенденции и актуальные новости с носителями языка из разных стран.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body text-center p-4">
+                        <div class="bg-primary bg-opacity-10 rounded-circle d-inline-flex p-3 mb-4">
+                            <i class="fas fa-shield-alt fa-2x text-primary"></i>
+                        </div>
+                        <h4 class="card-title mb-3">Безопасная среда</h4>
+                        <p class="card-text">Все участники проходят проверку, встречи модерируются, а контент контролируется для безопасности подростков.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body text-center p-4">
+                        <div class="bg-primary bg-opacity-10 rounded-circle d-inline-flex p-3 mb-4">
+                            <i class="fas fa-globe-americas fa-2x text-primary"></i>
+                        </div>
+                        <h4 class="card-title mb-3">Сверстники по всему миру</h4>
+                        <p class="card-text">Общайтесь с подростками из разных стран, изучая не только язык, но и культурные особенности и традиции.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Как это работает -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <h2 class="text-center mb-5">Как это <span class="text-primary">работает</span>?</h2>
+        
+        <div class="row g-4">
+            <div class="col-md-3">
+                <div class="text-center">
+                    <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 70px; height: 70px;">
+                        <span class="fs-4 fw-bold">1</span>
+                    </div>
+                    <h5>Регистрация</h5>
+                    <p class="text-muted">Создайте профиль, выберите языки и укажите интересы</p>
+                </div>
+            </div>
+            
+            <div class="col-md-3">
+                <div class="text-center">
+                    <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 70px; height: 70px;">
+                        <span class="fs-4 fw-bold">2</span>
+                    </div>
+                    <h5>Выбор темы</h5>
+                    <p class="text-muted">Найдите интересную встречу по любимой теме</p>
+                </div>
+            </div>
+            
+            <div class="col-md-3">
+                <div class="text-center">
+                    <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 70px; height: 70px;">
+                        <span class="fs-4 fw-bold">3</span>
+                    </div>
+                    <h5>Присоединяйтесь</h5>
+                    <p class="text-muted">Общайтесь в группе с модератором</p>
+                </div>
+            </div>
+            
+            <div class="col-md-3">
+                <div class="text-center">
+                    <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 70px; height: 70px;">
+                        <span class="fs-4 fw-bold">4</span>
+                    </div>
+                    <h5>Практикуйте</h5>
+                    <p class="text-muted">Участвуйте регулярно и отслеживайте прогресс</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Безопасность -->
+<section class="py-5 bg-white">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <img src="https://images.unsplash.com/photo-1559757148-5c350d0d3c56?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80" 
+                     class="img-fluid rounded-3 shadow" 
+                     alt="Безопасное общение">
+            </div>
+            <div class="col-lg-6 mt-5 mt-lg-0">
+                <h2 class="mb-4">Безопасность — <span class="text-primary">наш приоритет</span></h2>
+                
+                <div class="d-flex mb-3">
+                    <div class="me-3">
+                        <i class="fas fa-check-circle text-success fa-lg"></i>
+                    </div>
+                    <div>
+                        <h5>Верифицированные участники</h5>
+                        <p class="text-muted">Все подростки проходят проверку при регистрации</p>
+                    </div>
+                </div>
+                
+                <div class="d-flex mb-3">
+                    <div class="me-3">
+                        <i class="fas fa-check-circle text-success fa-lg"></i>
+                    </div>
+                    <div>
+                        <h5>Профессиональные модераторы</h5>
+                        <p class="text-muted">Каждая встреча проходит под наблюдением обученного модератора</p>
+                    </div>
+                </div>
+                
+                <div class="d-flex mb-3">
+                    <div class="me-3">
+                        <i class="fas fa-check-circle text-success fa-lg"></i>
+                    </div>
+                    <div>
+                        <h5>Контроль контента</h5>
+                        <p class="text-muted">Система автоматически фильтрует нежелательный контент</p>
+                    </div>
+                </div>
+                
+                <div class="d-flex">
+                    <div class="me-3">
+                        <i class="fas fa-check-circle text-success fa-lg"></i>
+                    </div>
+                    <div>
+                        <h5>Родительский контроль</h5>
+                        <p class="text-muted">Родители получают отчеты об активности своих детей</p>
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    <a href="{{ url_for('register') if not current_user.is_authenticated else url_for('dashboard') }}" class="btn btn-primary">
+                        <i class="fas fa-shield-alt me-2"></i>Присоединиться безопасно
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Отзывы -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <h2 class="text-center mb-5">Что говорят <span class="text-primary">участники</span></h2>
+        
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="user-avatar me-3">М</div>
+                            <div>
+                                <h6 class="mb-0">Максим, 16 лет</h6>
+                                <small class="text-muted">Изучает английский 8 месяцев</small>
+                            </div>
+                        </div>
+                        <p class="card-text">"Благодаря CulturaBridge я не только улучшил свой английский, но и нашел друзей в Испании и Японии. Мы обсуждаем новые игры и сериалы!"</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="user-avatar me-3" style="background-color: #4cc9f0;">А</div>
+                            <div>
+                                <h6 class="mb-0">Анна, 14 лет</h6>
+                                <small class="text-muted">Изучает корейский 5 месяцев</small>
+                            </div>
+                        </div>
+                        <p class="card-text">"Обожаю обсуждать K-pop с носителями языка! Теперь понимаю тексты песен и могу общаться с фанатами со всего мира."</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="user-avatar me-3" style="background-color: #f87171;">Д</div>
+                            <div>
+                                <h6 class="mb-0">Даниил, 17 лет</h6>
+                                <small class="text-muted">Изучает немецкий 1 год</small>
+                            </div>
+                        </div>
+                        <p class="card-text">"Отличная платформа! Модераторы всегда помогают, если что-то непонятно. Чувствую себя в безопасности и с каждым днем говорю увереннее."</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA -->
+<section class="py-5 text-white" style="background: linear-gradient(135deg, var(--primary), var(--secondary));">
+    <div class="container text-center">
+        <h2 class="mb-3">Готовы заговорить свободно?</h2>
+        <p class="lead mb-4 opacity-90">Присоединяйтесь к тысячам подростков, которые уже преодолели языковой барьер</p>
+        
+        {% if not current_user.is_authenticated %}
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <form action="{{ url_for('register') }}" method="GET">
+                    <div class="input-group mb-3">
+                        <input type="email" class="form-control" placeholder="Ваш email" required>
+                        <button class="btn btn-light" type="submit">
+                            <i class="fas fa-arrow-right me-2"></i>Начать бесплатно
+                        </button>
+                    </div>
+                </form>
+                <p class="small opacity-75">Первая неделя бесплатно, затем 9.99$/месяц. Отменить можно в любой момент.</p>
+            </div>
+        </div>
+        {% else %}
+        <a href="{{ url_for('dashboard') }}" class="btn btn-light btn-lg">
+            <i class="fas fa-rocket me-2"></i>Перейти в личный кабинет
+        </a>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}
