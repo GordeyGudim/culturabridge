@@ -14,7 +14,7 @@ class AuthValidator:
         if len(username) < 3 or len(username) > 50:
             return False, "Имя пользователя должно быть от 3 до 50 символов"
         
-        if not re.match(r'^[a-zA-Z0-9_]+$', username):
+        if not re.match(r'^[a-zA-Zа-яА-ЯёЁ0-9_]+$', username):
             return False, "Имя пользователя может содержать только буквы, цифры и подчеркивания"
         
         return True, ""

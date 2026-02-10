@@ -52,6 +52,9 @@ class Meeting(db.Model):
     moderator_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    telemost_link = db.Column(db.String(500), nullable=True)
+    
+
     
     participants = db.relationship('MeetingParticipant', backref='meeting_rel', lazy=True)  # ИЗМЕНИТЕ backref
 

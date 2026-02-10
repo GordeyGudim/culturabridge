@@ -163,6 +163,7 @@ def create_meeting():
         level = request.form.get('level')
         scheduled_time_str = request.form.get('scheduled_time')
         max_participants = request.form.get('max_participants', 6)
+        telemost_link = request.form.get('telemost_link', '').strip()
         
         if not all([title, topic, language, level, scheduled_time_str]):
             flash('Заполните все обязательные поля', 'danger')
@@ -181,7 +182,8 @@ def create_meeting():
                 moderator_id=current_user.id,
                 scheduled_time=scheduled_time,
                 max_participants=int(max_participants),
-                is_active=True
+                is_active=True,
+                telemost_link=telemost_link if telemost_link else None,
             )
             
             db.session.add(meeting)
@@ -207,6 +209,52 @@ def create_meeting():
             return render_template('create_meeting.html')
     
     return render_template('create_meeting.html')
+
+@app.route('/meetings/<int:meeting_id>/cancel', methods=['GET', 'POST'])
+@login_required
+def cancel_meeting(meeting_id):
+    """Отмена встречи (только для модератора)"""
+    meeting = Meeting.query.get_or_404(meeting_id)
+    
+    # Проверка прав: только создатель встречи может отменить
+    if meeting.moderator_id != current_user.id:
+        flash('Только создатель встречи может ее отменить', 'danger')
+        return redirect(url_for('meeting_detail', meeting_id=meeting_id))
+    
+    try:
+        # Отмечаем встречу как неактивную вместо удаления
+        meeting.is_active = False
+        meeting.cancelled_at = datetime.utcnow()
+        
+        db.session.commit()
+        flash('Встреча успешно отменена', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Ошибка при отмене встречи: {str(e)}', 'danger')
+    
+    return redirect(url_for('my_meetings'))
+
+@app.route('/meeting_room/<int:meeting_id>')
+@login_required
+def meeting_room(meeting_id):
+    """Страница видеовстречи (заглушка)"""
+    meeting = Meeting.query.get_or_404(meeting_id)
+    
+    # Получаем участников встречи
+    participants = MeetingParticipant.query.filter_by(meeting_id=meeting_id).all()
+    
+    # Проверяем, является ли пользователь участником или модератором
+    is_participant = any(p.user_id == current_user.id for p in participants)
+    is_moderator = meeting.moderator_id == current_user.id
+    
+    if not (is_participant or is_moderator):
+        flash('Вы не являетесь участником этой встречи', 'danger')
+        return redirect(url_for('meetings_list'))
+    
+    return render_template('meeting_room.html', 
+                         meeting=meeting,
+                         participants=participants)
     
 @app.route('/meetings')
 @login_required

@@ -6,27 +6,9 @@
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1>Все встречи</h1>
-        <a href="{{ url_for('create_meeting') }}" class="btn btn-primary">
-            <i class="fas fa-plus"></i> Создать встречу
-        </a>
     </div>
 
-    <!-- Табсы для фильтрации встреч -->
-    <ul class="nav nav-tabs mb-4" id="meetingsTab" role="tablist">
-        <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="all-tab" data-bs-toggle="tab" 
-                    data-bs-target="#all" type="button" role="tab">
-                Все встречи
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="filtered-tab" data-bs-toggle="tab" 
-                    data-bs-target="#filtered" type="button" role="tab">
-                Поиск и фильтры
-            </button>
-        </li>
-    </ul>
-
+    
     <div class="tab-content" id="meetingsTabContent">
         <!-- Все встречи -->
         <div class="tab-pane fade show active" id="all" role="tabpanel">
@@ -71,15 +53,11 @@
                             </p>
                         </div>
                         <div class="card-footer bg-transparent">
-                            {% if meeting.moderator_id != current_user.id %}
-                                {% if meeting.participants|length < meeting.max_participants %}
-                                <button class="btn btn-success btn-sm" 
-                                        onclick="joinMeeting({{ meeting.id }})">
-                                    <i class="fas fa-sign-in-alt"></i> Присоединиться
-                                </button>
-                                {% else %}
-                                <span class="badge bg-danger">Мест нет</span>
-                                {% endif %}
+                            {% if meeting.is_active %}
+                            <a href="{{ url_for('meeting_room', meeting_id=meeting.id) }}" 
+                                class="btn btn-outline-primary btn-sm">
+                                    <i class="fas fa-video"></i> Войти
+                            </a>
                             {% endif %}
                         </div>
                     </div>
@@ -94,71 +72,7 @@
             {% endif %}
         </div>
 
-        <!-- Поиск и фильтры -->
-        <div class="tab-pane fade" id="filtered" role="tabpanel">
-            <div class="card mb-4">
-                <div class="card-body">
-                    <h5 class="card-title mb-3">Найти встречу</h5>
-                    <form method="GET" action="{{ url_for('meetings_list') }}" class="row g-3">
-                        <div class="col-md-4">
-                            <label for="topic" class="form-label">Тема</label>
-                            <input type="text" class="form-control" id="topic" name="topic" 
-                                   placeholder="Введите тему" value="{{ filters.topic or '' }}">
-                        </div>
-                        <div class="col-md-4">
-                            <label for="language" class="form-label">Язык</label>
-                            <select class="form-select" id="language" name="language">
-                                <option value="">Все языки</option>
-                                <option value="Русский" {% if filters.language == 'Русский' %}selected{% endif %}>Русский</option>
-                                <option value="Английский" {% if filters.language == 'Английский' %}selected{% endif %}>Английский</option>
-                                <option value="Испанский" {% if filters.language == 'Испанский' %}selected{% endif %}>Испанский</option>
-                                <option value="Французский" {% if filters.language == 'Французский' %}selected{% endif %}>Французский</option>
-                                <option value="Немецкий" {% if filters.language == 'Немецкий' %}selected{% endif %}>Немецкий</option>
-                            </select>
-                        </div>
-                        <div class="col-md-4">
-                            <label for="level" class="form-label">Уровень</label>
-                            <select class="form-select" id="level" name="level">
-                                <option value="">Все уровни</option>
-                                <option value="Начинающий" {% if filters.level == 'Начинающий' %}selected{% endif %}>Начинающий</option>
-                                <option value="Средний" {% if filters.level == 'Средний' %}selected{% endif %}>Средний</option>
-                                <option value="Продвинутый" {% if filters.level == 'Продвинутый' %}selected{% endif %}>Продвинутый</option>
-                            </select>
-                        </div>
-                        <div class="col-12">
-                            <div class="d-flex justify-content-between">
-                                <a href="{{ url_for('meetings_list') }}" class="btn btn-secondary">
-                                    Сбросить фильтры
-                                </a>
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="fas fa-search"></i> Найти
-                                </button>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-            </div>
 
-            {% if popular_topics %}
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">Популярные темы</h5>
-                </div>
-                <div class="card-body">
-                    <div class="d-flex flex-wrap gap-2">
-                        {% for topic in popular_topics %}
-                        <a href="{{ url_for('meetings_list', topic=topic) }}" 
-                           class="badge bg-info text-decoration-none">
-                            {{ topic }}
-                        </a>
-                        {% endfor %}
-                    </div>
-                </div>
-            </div>
-            {% endif %}
-        </div>
-    </div>
-</div>
 
 <!-- JavaScript для табсов и действий -->
 <script>
@@ -174,30 +88,6 @@ document.addEventListener('DOMContentLoaded', function() {
     })
 });
 
-// Функция присоединения к встрече
-function joinMeeting(meetingId) {
-    if (confirm('Вы уверены, что хотите присоединиться к этой встрече?')) {
-        fetch(`/meeting/${meetingId}/join`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert('Вы успешно присоединились к встрече!');
-                location.reload();
-            } else {
-                alert('Ошибка: ' + data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Произошла ошибка');
-        });
-    }
-}
 </script>
 
 <style>

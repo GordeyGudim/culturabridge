@@ -6,130 +6,19 @@
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1>Мои встречи</h1>
-        <a href="{{ url_for('create_meeting') }}" class="btn btn-primary">
-            <i class="fas fa-plus"></i> Создать встречу
-        </a>
     </div>
 
-    <!-- Табсы для фильтрации встреч -->
-    <ul class="nav nav-tabs mb-4" id="meetingsTab" role="tablist">
-        <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="upcoming-tab" data-bs-toggle="tab" 
-                    data-bs-target="#upcoming" type="button" role="tab">
-                Предстоящие
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="past-tab" data-bs-toggle="tab" 
-                    data-bs-target="#past" type="button" role="tab">
-                Прошедшие
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="created-tab" data-bs-toggle="tab" 
-                    data-bs-target="#created" type="button" role="tab">
-                Созданные мной
-            </button>
-        </li>
-    </ul>
-
     <div class="tab-content" id="meetingsTabContent">
-        <!-- Предстоящие встречи -->
-        <div class="tab-pane fade show active" id="upcoming" role="tabpanel">
-            {% set upcoming_meetings = meetings|selectattr('scheduled_time', '>', current_time) if current_time else meetings %}
-            {% if upcoming_meetings %}
-            <div class="row">
-                {% for meeting in upcoming_meetings %}
-                <div class="col-md-6 col-lg-4 mb-4">
-                    <div class="card h-100">
-                        <div class="card-header bg-primary text-white">
-                            <h5 class="card-title mb-0">{{ meeting.title }}</h5>
-                        </div>
-                        <div class="card-body">
-                            <p class="card-text">{{ meeting.description|truncate(100) }}</p>
-                            <div class="mb-2">
-                                <span class="badge bg-info">{{ meeting.language }}</span>
-                                <span class="badge bg-secondary">{{ meeting.level }}</span>
-                                <span class="badge bg-success">{{ meeting.topic }}</span>
-                            </div>
-                            <p class="mb-1">
-                                <i class="far fa-calendar"></i>
-                                {{ meeting.scheduled_time.strftime('%d.%m.%Y %H:%M') }}
-                            </p>
-                            <p class="mb-1">
-                                <i class="far fa-clock"></i>
-                                {{ meeting.duration }} минут
-                            </p>
-                            <p class="mb-3">
-                                <i class="fas fa-users"></i>
-                                Участников: {{ meeting.participants|length }}/{{ meeting.max_participants }}
-                            </p>
-                        </div>
-                        <div class="card-footer bg-transparent">
-                            <!-- Кнопки удалены -->
-                        </div>
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-            {% else %}
-            <div class="alert alert-info">
-                <i class="fas fa-info-circle"></i> У вас нет предстоящих встреч.
-            </div>
-            {% endif %}
-        </div>
-
-        <!-- Прошедшие встречи -->
-        <div class="tab-pane fade" id="past" role="tabpanel">
-            {% set past_meetings = meetings|selectattr('scheduled_time', '<', current_time) if current_time else [] %}
-            {% if past_meetings %}
-            <div class="row">
-                {% for meeting in past_meetings %}
-                <div class="col-md-6 col-lg-4 mb-4">
-                    <div class="card h-100">
-                        <div class="card-header bg-secondary text-white">
-                            <h5 class="card-title mb-0">{{ meeting.title }}</h5>
-                        </div>
-                        <div class="card-body">
-                            <p class="card-text">{{ meeting.description|truncate(100) }}</p>
-                            <div class="mb-2">
-                                <span class="badge bg-info">{{ meeting.language }}</span>
-                                <span class="badge bg-secondary">{{ meeting.level }}</span>
-                            </div>
-                            <p class="mb-1">
-                                <i class="far fa-calendar"></i>
-                                {{ meeting.scheduled_time.strftime('%d.%m.%Y %H:%M') }}
-                            </p>
-                            <p class="mb-1">
-                                <i class="fas fa-users"></i>
-                                Участников: {{ meeting.participants|length }}
-                            </p>
-                        </div>
-                        <div class="card-footer bg-transparent">
-                            <button class="btn btn-outline-success btn-sm">
-                                <i class="fas fa-star"></i> Оценить
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-            {% else %}
-            <div class="alert alert-info">
-                <i class="fas fa-info-circle"></i> У вас нет прошедших встреч.
-            </div>
-            {% endif %}
-        </div>
 
         <!-- Созданные мной встречи -->
-        <div class="tab-pane fade" id="created" role="tabpanel">
+        <div class="tab-pane fade show active" id="all" role="tabpanel">
             {% set created_meetings = meetings|selectattr('moderator_id', '==', current_user.id) %}
             {% if created_meetings %}
             <div class="row">
                 {% for meeting in created_meetings %}
                 <div class="col-md-6 col-lg-4 mb-4">
                     <div class="card h-100">
-                        <div class="card-header bg-success text-white">
+                        <div class="card-header bg-primary text-white">
                             <h5 class="card-title mb-0">{{ meeting.title }}</h5>
                             <span class="badge bg-light text-dark">Модератор</span>
                         </div>
@@ -154,10 +43,16 @@
                         </div>
                         <div class="card-footer bg-transparent">
                             {% if meeting.is_active %}
-                            <button class="btn btn-outline-danger btn-sm" 
-                                    onclick="cancelMeeting({{ meeting.id }})">
-                                <i class="fas fa-times"></i> Отменить
-                            </button>
+                            
+                            <a href="{{ url_for('cancel_meeting', meeting_id=meeting.id) }}" 
+                                class="btn btn-outline-danger btn-sm"
+                                onclick="return confirm('Отменить встречу?')">
+                            <i class="fas fa-times"></i> Отменить
+                            </a>
+                            <a href="{{ url_for('meeting_room', meeting_id=meeting.id) }}" 
+                                class="btn btn-outline-primary btn-sm">
+                                    <i class="fas fa-video"></i> Войти
+                            </a>
                             {% endif %}
                         </div>
                     </div>

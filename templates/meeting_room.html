@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Встреча #{{ meeting.id }} - CulturaBridge{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Хлебные крошки -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Главная</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('meetings_list') }}">Встречи</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Встреча #{{ meeting.id }}</li>
+        </ol>
+    </nav>
+
+    <!-- Заголовок встречи -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">{{ meeting.title }}</h4>
+                <span class="badge bg-light text-dark">
+                    <i class="fas fa-users"></i> {{ meeting.current_participants }}/{{ meeting.max_participants }}
+                </span>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-8">
+                    <p class="card-text">{{ meeting.description or "Описание отсутствует" }}</p>
+                    
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <p><strong><i class="fas fa-language"></i> Язык:</strong> {{ meeting.language }}</p>
+                            <p><strong><i class="fas fa-chart-bar"></i> Уровень:</strong> {{ meeting.level }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong><i class="fas fa-calendar-alt"></i> Дата:</strong> {{ meeting.scheduled_time.strftime('%d.%m.%Y %H:%M') }}</p>
+                            <p><strong><i class="fas fa-user"></i> Модератор:</strong> ID: {{ meeting.moderator_id }}</p>
+
+                        </div>
+                        <div class="col-md-6">
+                                <h6><i class="fas fa-video"></i> Ссылка на видеовстречу:</h6>
+                                <div class="d-flex align-items-center mt-2">
+                                    <input type="text" 
+                                           class="form-control form-control-sm me-2" 
+                                           value="{{ meeting.telemost_link }}" 
+                                           readonly 
+                                           id="telemostUrl">
+                                </div>
+                                <a href="{{ meeting.telemost_link }}" 
+                                   target="_blank" 
+                                   class="btn btn-primary btn-sm mt-2 w-100">
+                                    <i class="fas fa-external-link-alt"></i> Перейти в Яндекс.Телемост
+                                </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
