@@ -71,6 +71,20 @@
                             <input type="number" class="form-control" id="max_participants" 
                                    name="max_participants" value="6" min="2" max="20">
                         </div>
+                        <div class="mb-3">
+                            <label for="telemost_link" class="form-label">
+                                <i class="fas fa-link"></i> Ссылка на Яндекс.Телемост
+                            </label>
+                            <input type="url" 
+                                class="form-control" 
+                                id="telemost_link" 
+                                name="telemost_link"
+                                placeholder="https://telemost.yandex.ru/j/xxxxxxxxxx"
+                                pattern="https://.*">
+                            <div class="form-text">
+                                Создайте встречу в <a href="https://telemost.yandex.ru" target="_blank">Яндекс.Телемост</a> и вставьте ссылку
+                            </div>
+                        </div>
                         
                         <div class="d-flex justify-content-between">
                             <a href="{{ url_for('my_meetings') }}" class="btn btn-secondary">Отмена</a>
