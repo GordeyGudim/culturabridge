@@ -31,29 +31,11 @@
                     <a href="{{ url_for('my_meetings') }}" class="nav-link">
                         <i class="fas fa-calendar-alt me-2"></i> Мои встречи
                     </a>
-                    <a href="#" class="nav-link">
-                        <i class="fas fa-users me-2"></i> Друзья
-                    </a>
-                    <a href="#" class="nav-link">
-                        <i class="fas fa-chart-line me-2"></i> Прогресс
-                    </a>
                     <hr class="opacity-25 my-3">
                     <a href="{{ url_for('logout') }}" class="nav-link">
                         <i class="fas fa-sign-out-alt me-2"></i> Выход
                     </a>
                 </nav>
-                
-                <div class="mt-5">
-                    <h6 class="opacity-75 mb-3">Языки</h6>
-                    {% for lang in user.learning_languages %}
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span>{{ lang }}</span>
-                        <div class="progress" style="width: 60px; height: 6px;">
-                            <div class="progress-bar" style="width: {{ [25, 50, 75]|random }}%"></div>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
             </div>
         </div>
         
@@ -161,46 +143,32 @@
                     </div>
                     
                     <!-- Боковая панель -->
-                    <div class="col-xl-4">
+                    <div class="col-xl-4 d-flex">  <!-- Добавлено d-flex -->
                         <!-- Профиль -->
-                        <div class="card border-0 shadow-sm mb-4">
-                            <div class="card-body">
+                        <div class="card border-0 shadow-sm mb-4 w-100">  <!-- Добавлено w-100 -->
+                            <div class="card-body d-flex flex-column">  <!-- Добавлено d-flex flex-column -->
                                 <h5 class="mb-3"><i class="fas fa-user-circle me-2"></i> Мой профиль</h5>
-                                <ul class="list-unstyled mb-4">
-                                    <li class="mb-2"><strong>Страна:</strong> {{ user.country }}</li>
-                                    <li class="mb-2"><strong>Возраст:</strong> {{ user.age }} лет</li>
-                                    <li class="mb-2"><strong>Родной язык:</strong> {{ user.native_language }}</li>
-                                    <li>
-                                        <strong>Изучаю:</strong>
-                                        <div class="mt-1">
-                                            {% for lang in user.learning_languages %}
-                                            <span class="badge bg-light text-dark me-1 mb-1">{{ lang }}</span>
-                                            {% endfor %}
-                                        </div>
-                                    </li>
-                                </ul>
-                                <a href="{{ url_for('profile') }}" class="btn btn-outline-primary w-100">
+                                
+                                <div class="flex-grow-1">  <!-- Добавлено: контент растягивается -->
+                                    <ul class="list-unstyled mb-4">
+                                        <li class="mb-2"><strong>Страна:</strong> {{ user.country }}</li>
+                                        <li class="mb-2"><strong>Возраст:</strong> {{ user.age }} лет</li>
+                                        <li class="mb-2"><strong>Родной язык:</strong> {{ user.native_language }}</li>
+                                        <li class="mb-4">
+                                            <strong>Изучаю:</strong>
+                                            <div class="mt-2">
+                                                {% for lang in user.learning_languages %}
+                                                <span class="badge bg-primary me-1 mb-1 p-2">{{ lang }}</span>
+                                                {% endfor %}
+                                            </div>
+                                        </li>
+                                    </ul>
+                                    
+                                </div>
+                                
+                                <a href="{{ url_for('profile') }}" class="btn btn-outline-primary w-100 mt-3">
                                     <i class="fas fa-edit me-2"></i> Редактировать профиль
                                 </a>
-                            </div>
-                        </div>
-                        
-                        <!-- Активность -->
-                        <div class="card border-0 shadow-sm">
-                            <div class="card-header bg-white border-0 py-3">
-                                <h5 class="mb-0"><i class="fas fa-history me-2"></i> Недавняя активность</h5>
-                            </div>
-                            <div class="card-body">
-                                <div class="text-center py-4">
-                                    <div class="bg-light rounded-circle d-inline-flex p-4 mb-3">
-                                        <i class="fas fa-history fa-2x text-muted"></i>
-                                    </div>
-                                    <h5>Начните свое путешествие!</h5>
-                                    <p class="text-muted mb-4">Присоединяйтесь к встречам, и здесь появится ваша активность</p>
-                                    <a href="{{ url_for('meetings_list') }}" class="btn btn-primary">
-                                        <i class="fas fa-search me-2"></i> Найти встречи
-                                    </a>
-                                </div>
                             </div>
                         </div>
                     </div>
