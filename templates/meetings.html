@@ -65,9 +65,8 @@
                 {% endfor %}
             </div>
             {% else %}
-            <div class="alert alert-info">
+            <div class="col-md-6">
                 <i class="fas fa-info-circle"></i> Пока нет активных встреч. 
-                <a href="{{ url_for('create_meeting') }}">Создайте первую!</a>
             </div>
             {% endif %}
         </div>
