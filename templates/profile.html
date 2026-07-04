@@ -19,6 +19,7 @@
                     </div>
                     
                     <form method="POST" action="{{ url_for('profile') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <div class="row">
                             <!-- Основная информация -->
                             <div class="col-md-6 mb-4">

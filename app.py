@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
+from flask_wtf import CSRFProtect
 from config import Config
 from models import db, User, Meeting, MeetingParticipant, MeetingRoom, RoomParticipant
 from auth import AuthService, AuthValidator
@@ -11,6 +12,10 @@ app = Flask(__name__)
 app.config.from_object(Config)
 
 db.init_app(app)
+
+# Flask-WTF уже был в зависимостях, но CSRFProtect нигде не активировался —
+# POST-формы (логин, отмена встречи и т.д.) были не защищены от CSRF.
+csrf = CSRFProtect(app)
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -168,7 +173,19 @@ def create_meeting():
         if not all([title, topic, language, level, scheduled_time_str]):
             flash('Заполните все обязательные поля', 'danger')
             return render_template('create_meeting.html')
-        
+
+        # Раньше эта проверка существовала только в неиспользуемом
+        # MeetingService.create_room и никогда не выполнялась на реальном
+        # пути создания встречи. Учитывая, что платформой пользуются
+        # несовершеннолетние (13-19 лет), правило должно проверяться здесь.
+        if current_user.age < 16:
+            flash('Создавать встречи могут пользователи от 16 лет', 'danger')
+            return render_template('create_meeting.html')
+
+        if telemost_link and not AuthValidator.validate_meeting_link(telemost_link):
+            flash('Ссылка на встречу должна вести на https://telemost.yandex.ru', 'danger')
+            return render_template('create_meeting.html')
+
         try:
             from datetime import datetime
             scheduled_time = datetime.strptime(scheduled_time_str, '%Y-%m-%dT%H:%M')
@@ -210,7 +227,7 @@ def create_meeting():
     
     return render_template('create_meeting.html')
 
-@app.route('/meetings/<int:meeting_id>/cancel', methods=['GET', 'POST'])
+@app.route('/meetings/<int:meeting_id>/cancel', methods=['POST'])
 @login_required
 def cancel_meeting(meeting_id):
     """Отмена встречи (только для модератора)"""
@@ -308,17 +325,43 @@ def meeting_detail(meeting_id):
     meeting = Meeting.query.get_or_404(meeting_id)
     return render_template('meeting_detail.html', meeting=meeting)
 
-@app.route('/meetings/<int:room_id>/join', methods=['POST'])
+@app.route('/meetings/<int:meeting_id>/join', methods=['POST'])
 @login_required
-def join_meeting(room_id):
-    success, message = MeetingService.join_room(current_user.id, room_id)
-    
-    if success:
+def join_meeting(meeting_id):
+    # ВАЖНО: раньше здесь вызывался MeetingService.join_room(), который
+    # работает с моделью MeetingRoom — отдельной от Meeting, используемой
+    # во всех остальных роутах. Из-за этого редирект строился с параметром
+    # room_id, а meeting_detail ожидает meeting_id -> BuildError (500).
+    # Приводим join_meeting к той же модели (Meeting/MeetingParticipant),
+    # которой пользуется весь остальной код.
+    meeting = Meeting.query.get_or_404(meeting_id)
+
+    if not meeting.is_active:
+        flash('Эта встреча уже завершена или отменена', 'danger')
+        return redirect(url_for('meeting_detail', meeting_id=meeting_id))
+
+    existing = MeetingParticipant.query.filter_by(
+        user_id=current_user.id, meeting_id=meeting_id
+    ).first()
+    if existing:
+        flash('Вы уже присоединились к этой встрече', 'info')
+        return redirect(url_for('meeting_detail', meeting_id=meeting_id))
+
+    current_count = MeetingParticipant.query.filter_by(meeting_id=meeting_id).count()
+    if current_count >= meeting.max_participants:
+        flash('Комната заполнена', 'danger')
+        return redirect(url_for('meeting_detail', meeting_id=meeting_id))
+
+    try:
+        participant = MeetingParticipant(user_id=current_user.id, meeting_id=meeting_id)
+        db.session.add(participant)
+        db.session.commit()
         flash('Вы успешно присоединились к встрече!', 'success')
-    else:
-        flash(message, 'danger')
-    
-    return redirect(url_for('meeting_detail', room_id=room_id))
+    except Exception:
+        db.session.rollback()
+        flash('Не удалось присоединиться к встрече', 'danger')
+
+    return redirect(url_for('meeting_detail', meeting_id=meeting_id))
 
 @app.route('/my_meetings')
 @login_required
@@ -407,4 +450,8 @@ def get_meetings():
     return jsonify(result)
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    import os
+    debug_mode = os.environ.get('FLASK_ENV', 'development') != 'production'
+    # debug=True на 0.0.0.0 открывает интерактивный Werkzeug-дебаггер всем
+    # желающим и позволяет выполнять произвольный код — недопустимо в проде.
+    app.run(debug=debug_mode, host='0.0.0.0', port=5000)

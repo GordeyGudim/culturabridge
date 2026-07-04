@@ -1,7 +1,15 @@
 from flask import current_app
 from models import db, User
 from datetime import datetime
+from urllib.parse import urlparse
 import re
+
+# Разрешённые домены для ссылок на видеовстречи. Jinja2 экранирует HTML,
+# но НЕ проверяет схему URL — значение вроде "javascript:alert(1)",
+# сохранённое в telemost_link, спокойно попадёт в <a href="..."> и
+# выполнится по клику (stored XSS). Поэтому схему и домен нужно белить
+# на этапе сохранения, а не полагаться на автоэкранирование шаблонов.
+ALLOWED_LINK_DOMAINS = {'telemost.yandex.ru'}
 
 class AuthValidator:
     @staticmethod
@@ -35,6 +43,18 @@ class AuthValidator:
         
         return True, ""
     
+    @staticmethod
+    def validate_meeting_link(url):
+        try:
+            parsed = urlparse(url)
+        except ValueError:
+            return False
+
+        if parsed.scheme != 'https':
+            return False
+
+        return parsed.netloc in ALLOWED_LINK_DOMAINS
+
     @staticmethod
     def validate_age(age):
         try:

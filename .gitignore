@@ -1,0 +1,22 @@
+# Секреты и конфигурация окружения
+.env
+.env.*
+!.env.example
+
+# Базы данных
+*.db
+*.sqlite
+*.sqlite3
+instance/
+
+# Python
+__pycache__/
+*.pyc
+venv/
+.venv/
+*.egg-info/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store

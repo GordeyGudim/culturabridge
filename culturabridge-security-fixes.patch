@@ -1,0 +1,305 @@
+diff -ruN '--exclude=__pycache__' '--exclude=*.db' '--exclude=instance' '--exclude=To' repo/.env.example repo_fixed/.env.example
+--- repo/.env.example	1970-01-01 00:00:00.000000000 +0000
++++ repo_fixed/.env.example	2026-07-04 09:00:18.038582790 +0000
+@@ -0,0 +1,10 @@
++# Скопируйте этот файл в .env и заполните реальными значениями.
++# .env НЕ должен попадать в git (см. .gitignore).
++
++# Сгенерировать: python -c "import secrets; print(secrets.token_hex(32))"
++SECRET_KEY=change-me-generate-a-random-value
++
++DATABASE_URL=sqlite:///database.db
++
++# Если true — приложение не запустится без SECRET_KEY из окружения
++FLASK_ENV=production
+diff -ruN '--exclude=__pycache__' '--exclude=*.db' '--exclude=instance' '--exclude=To' repo/.gitignore repo_fixed/.gitignore
+--- repo/.gitignore	1970-01-01 00:00:00.000000000 +0000
++++ repo_fixed/.gitignore	2026-07-04 09:00:13.422582516 +0000
+@@ -0,0 +1,22 @@
++# Секреты и конфигурация окружения
++.env
++.env.*
++!.env.example
++
++# Базы данных
++*.db
++*.sqlite
++*.sqlite3
++instance/
++
++# Python
++__pycache__/
++*.pyc
++venv/
++.venv/
++*.egg-info/
++
++# IDE / OS
++.vscode/
++.idea/
++.DS_Store
+diff -ruN '--exclude=__pycache__' '--exclude=*.db' '--exclude=instance' '--exclude=To' repo/app.py repo_fixed/app.py
+--- repo/app.py	2026-02-11 09:09:43.000000000 +0000
++++ repo_fixed/app.py	2026-07-04 09:01:24.454923724 +0000
+@@ -1,5 +1,6 @@
+ from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
+ from flask_login import LoginManager, login_user, login_required, logout_user, current_user
++from flask_wtf import CSRFProtect
+ from config import Config
+ from models import db, User, Meeting, MeetingParticipant, MeetingRoom, RoomParticipant
+ from auth import AuthService, AuthValidator
+@@ -12,6 +13,10 @@
+ 
+ db.init_app(app)
+ 
++# Flask-WTF уже был в зависимостях, но CSRFProtect нигде не активировался —
++# POST-формы (логин, отмена встречи и т.д.) были не защищены от CSRF.
++csrf = CSRFProtect(app)
++
+ login_manager = LoginManager()
+ login_manager.init_app(app)
+ login_manager.login_view = 'login'
+@@ -168,7 +173,19 @@
+         if not all([title, topic, language, level, scheduled_time_str]):
+             flash('Заполните все обязательные поля', 'danger')
+             return render_template('create_meeting.html')
+-        
++
++        # Раньше эта проверка существовала только в неиспользуемом
++        # MeetingService.create_room и никогда не выполнялась на реальном
++        # пути создания встречи. Учитывая, что платформой пользуются
++        # несовершеннолетние (13-19 лет), правило должно проверяться здесь.
++        if current_user.age < 16:
++            flash('Создавать встречи могут пользователи от 16 лет', 'danger')
++            return render_template('create_meeting.html')
++
++        if telemost_link and not AuthValidator.validate_meeting_link(telemost_link):
++            flash('Ссылка на встречу должна вести на https://telemost.yandex.ru', 'danger')
++            return render_template('create_meeting.html')
++
+         try:
+             from datetime import datetime
+             scheduled_time = datetime.strptime(scheduled_time_str, '%Y-%m-%dT%H:%M')
+@@ -210,7 +227,7 @@
+     
+     return render_template('create_meeting.html')
+ 
+-@app.route('/meetings/<int:meeting_id>/cancel', methods=['GET', 'POST'])
++@app.route('/meetings/<int:meeting_id>/cancel', methods=['POST'])
+ @login_required
+ def cancel_meeting(meeting_id):
+     """Отмена встречи (только для модератора)"""
+@@ -308,17 +325,43 @@
+     meeting = Meeting.query.get_or_404(meeting_id)
+     return render_template('meeting_detail.html', meeting=meeting)
+ 
+-@app.route('/meetings/<int:room_id>/join', methods=['POST'])
++@app.route('/meetings/<int:meeting_id>/join', methods=['POST'])
+ @login_required
+-def join_meeting(room_id):
+-    success, message = MeetingService.join_room(current_user.id, room_id)
+-    
+-    if success:
++def join_meeting(meeting_id):
++    # ВАЖНО: раньше здесь вызывался MeetingService.join_room(), который
++    # работает с моделью MeetingRoom — отдельной от Meeting, используемой
++    # во всех остальных роутах. Из-за этого редирект строился с параметром
++    # room_id, а meeting_detail ожидает meeting_id -> BuildError (500).
++    # Приводим join_meeting к той же модели (Meeting/MeetingParticipant),
++    # которой пользуется весь остальной код.
++    meeting = Meeting.query.get_or_404(meeting_id)
++
++    if not meeting.is_active:
++        flash('Эта встреча уже завершена или отменена', 'danger')
++        return redirect(url_for('meeting_detail', meeting_id=meeting_id))
++
++    existing = MeetingParticipant.query.filter_by(
++        user_id=current_user.id, meeting_id=meeting_id
++    ).first()
++    if existing:
++        flash('Вы уже присоединились к этой встрече', 'info')
++        return redirect(url_for('meeting_detail', meeting_id=meeting_id))
++
++    current_count = MeetingParticipant.query.filter_by(meeting_id=meeting_id).count()
++    if current_count >= meeting.max_participants:
++        flash('Комната заполнена', 'danger')
++        return redirect(url_for('meeting_detail', meeting_id=meeting_id))
++
++    try:
++        participant = MeetingParticipant(user_id=current_user.id, meeting_id=meeting_id)
++        db.session.add(participant)
++        db.session.commit()
+         flash('Вы успешно присоединились к встрече!', 'success')
+-    else:
+-        flash(message, 'danger')
+-    
+-    return redirect(url_for('meeting_detail', room_id=room_id))
++    except Exception:
++        db.session.rollback()
++        flash('Не удалось присоединиться к встрече', 'danger')
++
++    return redirect(url_for('meeting_detail', meeting_id=meeting_id))
+ 
+ @app.route('/my_meetings')
+ @login_required
+@@ -407,4 +450,8 @@
+     return jsonify(result)
+ 
+ if __name__ == '__main__':
+-    app.run(debug=True, host='0.0.0.0', port=5000)
+\ No newline at end of file
++    import os
++    debug_mode = os.environ.get('FLASK_ENV', 'development') != 'production'
++    # debug=True на 0.0.0.0 открывает интерактивный Werkzeug-дебаггер всем
++    # желающим и позволяет выполнять произвольный код — недопустимо в проде.
++    app.run(debug=debug_mode, host='0.0.0.0', port=5000)
+\ No newline at end of file
+diff -ruN '--exclude=__pycache__' '--exclude=*.db' '--exclude=instance' '--exclude=To' repo/auth.py repo_fixed/auth.py
+--- repo/auth.py	2026-02-11 09:09:43.000000000 +0000
++++ repo_fixed/auth.py	2026-07-04 09:01:02.525270615 +0000
+@@ -1,8 +1,16 @@
+ from flask import current_app
+ from models import db, User
+ from datetime import datetime
++from urllib.parse import urlparse
+ import re
+ 
++# Разрешённые домены для ссылок на видеовстречи. Jinja2 экранирует HTML,
++# но НЕ проверяет схему URL — значение вроде "javascript:alert(1)",
++# сохранённое в telemost_link, спокойно попадёт в <a href="..."> и
++# выполнится по клику (stored XSS). Поэтому схему и домен нужно белить
++# на этапе сохранения, а не полагаться на автоэкранирование шаблонов.
++ALLOWED_LINK_DOMAINS = {'telemost.yandex.ru'}
++
+ class AuthValidator:
+     @staticmethod
+     def validate_email(email):
+@@ -36,6 +44,18 @@
+         return True, ""
+     
+     @staticmethod
++    def validate_meeting_link(url):
++        try:
++            parsed = urlparse(url)
++        except ValueError:
++            return False
++
++        if parsed.scheme != 'https':
++            return False
++
++        return parsed.netloc in ALLOWED_LINK_DOMAINS
++
++    @staticmethod
+     def validate_age(age):
+         try:
+             age_int = int(age)
+diff -ruN '--exclude=__pycache__' '--exclude=*.db' '--exclude=instance' '--exclude=To' repo/config.py repo_fixed/config.py
+--- repo/config.py	2026-02-11 09:09:43.000000000 +0000
++++ repo_fixed/config.py	2026-07-04 09:00:24.959658262 +0000
+@@ -1,6 +1,23 @@
+ import os
++from dotenv import load_dotenv
++
++load_dotenv()
++
++FLASK_ENV = os.environ.get('FLASK_ENV', 'development')
++
+ 
+ class Config:
+-    SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-secret-key-change-in-production'
+-    SQLALCHEMY_DATABASE_URI = 'sqlite:///database.db'
+-    SQLALCHEMY_TRACK_MODIFICATIONS = False
+\ No newline at end of file
++    SECRET_KEY = os.environ.get('SECRET_KEY')
++    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'sqlite:///database.db')
++    SQLALCHEMY_TRACK_MODIFICATIONS = False
++
++    if not SECRET_KEY:
++        if FLASK_ENV == 'production':
++            # В проде без SECRET_KEY в окружении лучше упасть сразу,
++            # чем молча подписывать сессии предсказуемым ключом.
++            raise RuntimeError(
++                'SECRET_KEY не задан в окружении. Создайте .env на основе '
++                '.env.example и укажите случайный SECRET_KEY.'
++            )
++        # Для локальной разработки — предсказуемый, но явно помеченный ключ.
++        SECRET_KEY = 'dev-only-insecure-key'
+\ No newline at end of file
+diff -ruN '--exclude=__pycache__' '--exclude=*.db' '--exclude=instance' '--exclude=To' repo/templates/create_meeting.html repo_fixed/templates/create_meeting.html
+--- repo/templates/create_meeting.html	2026-02-11 09:09:43.000000000 +0000
++++ repo_fixed/templates/create_meeting.html	2026-07-04 09:01:34.290801474 +0000
+@@ -12,6 +12,7 @@
+                 </div>
+                 <div class="card-body">
+                     <form method="POST" action="{{ url_for('create_meeting') }}">
++                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                         <div class="mb-3">
+                             <label for="title" class="form-label">Название встречи *</label>
+                             <input type="text" class="form-control" id="title" name="title" 
+diff -ruN '--exclude=__pycache__' '--exclude=*.db' '--exclude=instance' '--exclude=To' repo/templates/edit_meeting.html repo_fixed/templates/edit_meeting.html
+--- repo/templates/edit_meeting.html	2026-02-11 09:09:43.000000000 +0000
++++ repo_fixed/templates/edit_meeting.html	2026-07-04 09:01:34.291429048 +0000
+@@ -12,6 +12,7 @@
+                 </div>
+                 <div class="card-body">
+                     <form method="POST" action="{{ url_for('edit_meeting', meeting_id=meeting.id) }}">
++                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                         <div class="mb-3">
+                             <label for="title" class="form-label">Название встречи *</label>
+                             <input type="text" class="form-control" id="title" name="title" 
+diff -ruN '--exclude=__pycache__' '--exclude=*.db' '--exclude=instance' '--exclude=To' repo/templates/login.html repo_fixed/templates/login.html
+--- repo/templates/login.html	2026-02-11 09:09:43.000000000 +0000
++++ repo_fixed/templates/login.html	2026-07-04 09:01:34.288177778 +0000
+@@ -17,6 +17,7 @@
+                     </div>
+                     
+                     <form method="POST" action="{{ url_for('login') }}">
++                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                         <div class="mb-4">
+                             <label for="username" class="form-label fw-semibold">Имя пользователя или Email</label>
+                             <div class="input-group">
+diff -ruN '--exclude=__pycache__' '--exclude=*.db' '--exclude=instance' '--exclude=To' repo/templates/my_meetings.html repo_fixed/templates/my_meetings.html
+--- repo/templates/my_meetings.html	2026-02-11 09:09:43.000000000 +0000
++++ repo_fixed/templates/my_meetings.html	2026-07-04 09:01:37.868726370 +0000
+@@ -44,11 +44,14 @@
+                         <div class="card-footer bg-transparent">
+                             {% if meeting.is_active %}
+                             
+-                            <a href="{{ url_for('cancel_meeting', meeting_id=meeting.id) }}" 
+-                                class="btn btn-outline-danger btn-sm"
+-                                onclick="return confirm('Отменить встречу?')">
+-                            <i class="fas fa-times"></i> Отменить
+-                            </a>
++                            <form method="POST" action="{{ url_for('cancel_meeting', meeting_id=meeting.id) }}"
++                                  style="display:inline"
++                                  onsubmit="return confirm('Отменить встречу?')">
++                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
++                                <button type="submit" class="btn btn-outline-danger btn-sm">
++                                    <i class="fas fa-times"></i> Отменить
++                                </button>
++                            </form>
+                             <a href="{{ url_for('meeting_room', meeting_id=meeting.id) }}" 
+                                 class="btn btn-outline-primary btn-sm">
+                                     <i class="fas fa-video"></i> Войти
+diff -ruN '--exclude=__pycache__' '--exclude=*.db' '--exclude=instance' '--exclude=To' repo/templates/profile.html repo_fixed/templates/profile.html
+--- repo/templates/profile.html	2026-02-11 09:09:43.000000000 +0000
++++ repo_fixed/templates/profile.html	2026-07-04 09:01:34.288035958 +0000
+@@ -19,6 +19,7 @@
+                     </div>
+                     
+                     <form method="POST" action="{{ url_for('profile') }}">
++                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                         <div class="row">
+                             <!-- Основная информация -->
+                             <div class="col-md-6 mb-4">
+diff -ruN '--exclude=__pycache__' '--exclude=*.db' '--exclude=instance' '--exclude=To' repo/templates/register.html repo_fixed/templates/register.html
+--- repo/templates/register.html	2026-02-11 09:09:43.000000000 +0000
++++ repo_fixed/templates/register.html	2026-07-04 09:01:34.291280053 +0000
+@@ -168,6 +168,7 @@
+                     </div>
+                     
+                     <form method="POST" action="{{ url_for('register') }}">
++                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                         <h5 class="mb-4 border-bottom pb-2">Основная информация</h5>
+                         
+                         <div class="row mb-4">

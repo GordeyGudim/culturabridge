@@ -44,11 +44,14 @@
                         <div class="card-footer bg-transparent">
                             {% if meeting.is_active %}
                             
-                            <a href="{{ url_for('cancel_meeting', meeting_id=meeting.id) }}" 
-                                class="btn btn-outline-danger btn-sm"
-                                onclick="return confirm('Отменить встречу?')">
-                            <i class="fas fa-times"></i> Отменить
-                            </a>
+                            <form method="POST" action="{{ url_for('cancel_meeting', meeting_id=meeting.id) }}"
+                                  style="display:inline"
+                                  onsubmit="return confirm('Отменить встречу?')">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-outline-danger btn-sm">
+                                    <i class="fas fa-times"></i> Отменить
+                                </button>
+                            </form>
                             <a href="{{ url_for('meeting_room', meeting_id=meeting.id) }}" 
                                 class="btn btn-outline-primary btn-sm">
                                     <i class="fas fa-video"></i> Войти

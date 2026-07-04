@@ -168,6 +168,7 @@
                     </div>
                     
                     <form method="POST" action="{{ url_for('register') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <h5 class="mb-4 border-bottom pb-2">Основная информация</h5>
                         
                         <div class="row mb-4">
